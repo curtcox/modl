@@ -305,6 +305,11 @@
             You can also use <code>https://...</code> directly.
           </div>
           <div style="margin-top:8px;">
+            A node whose URL is an image (<code>.svg</code>, <code>.png</code>, <code>.jpg</code>, … or any URL that
+            loads as an image) is drawn as that image. A size fits the image in that size's box; without one the image
+            keeps its natural size. A shape draws a frame around it, and text appears below it.
+          </div>
+          <div style="margin-top:8px;">
             A line containing only a supported color name sets the diagram background color.
           </div>
         </div>
@@ -1017,6 +1022,8 @@ const signInResult = await completeSignIn();
           color: "gray",
           url: "",
           text: "",
+          sizeGiven: false,
+          shapeGiven: false,
         });
       }
       return nodes.get(id);
@@ -1093,8 +1100,8 @@ const signInResult = await completeSignIn();
         }
         const attrs = parseAttrs(tokens.slice(1), "node");
         const n = ensureNode(id);
-        if (attrs.size) n.size = attrs.size;
-        if (attrs.style) n.shape = attrs.style;
+        if (attrs.size) { n.size = attrs.size; n.sizeGiven = true; }
+        if (attrs.style) { n.shape = attrs.style; n.shapeGiven = true; }
         if (attrs.color) n.color = attrs.color;
         if (attrs.url) n.url = attrs.url;
         if (attrs.text) n.text = attrs.text;
@@ -1276,15 +1283,132 @@ const signInResult = await completeSignIn();
     return Math.max(NODE_W, NODE_H) * 0.34 * sc; // square-ish
   }
 
-  function edgeEndpoints(a, b, shapeA, sizeA, shapeB, sizeB) {
+  // -----------------------------
+  // Image nodes: a node whose URL is a displayable image shows that image
+  // -----------------------------
+  const IMAGE_EXTENSION = /\.(svg|png|apng|jpe?g|gif|webp|avif|bmp|ico)$/i;
+  const images = new Map(); // url -> { status: "loading" | "ok" | "failed", width, height }
+  let imageRenderRaf = 0;
+
+  function hasImageExtension(url) {
+    try { return IMAGE_EXTENSION.test(new URL(url).pathname); } catch { return false; }
+  }
+
+  // URLs without an image extension are probed by loading them as an image; the node switches over if that works.
+  // Returns null while the URL isn't known to be an image. width/height are 0 until known (or if the image has
+  // no intrinsic size, like an SVG without width/height).
+  function nodeImage(url) {
+    if (!/^https?:\/\//i.test(url)) return null;
+    let entry = images.get(url);
+    if (!entry) {
+      entry = { status: "loading", width: 0, height: 0 };
+      images.set(url, entry);
+      const img = new Image();
+      img.onload = () => {
+        entry.status = "ok";
+        entry.width = img.naturalWidth;
+        entry.height = img.naturalHeight;
+        if (!imageRenderRaf) {
+          imageRenderRaf = requestAnimationFrame(() => {
+            imageRenderRaf = 0;
+            renderAll();
+          });
+        }
+      };
+      img.onerror = () => {
+        entry.status = "failed";
+        if (hasImageExtension(url)) renderAll();
+      };
+      img.src = url;
+    }
+    if (entry.status === "ok") return entry;
+    if (entry.status === "loading" && hasImageExtension(url)) return entry;
+    return null;
+  }
+
+  // An explicit size fits the image in that size's box; otherwise it's shown at its natural size
+  function imageNodeSize(n, img) {
+    if (!n.sizeGiven && img.width && img.height) return { w: img.width, h: img.height };
+    const sc = nodeScale(n.size);
+    const boxW = NODE_W * sc, boxH = NODE_H * sc;
+    if (!img.width || !img.height) return { w: boxW, h: boxH };
+    const k = Math.min(boxW / img.width, boxH / img.height);
+    return { w: img.width * k, h: img.height * k };
+  }
+
+  // Distance from the center of a convex polygon (points relative to that center) to its edge along (ux, uy)
+  function rayExit(points, ux, uy) {
+    let best = Infinity;
+    for (let i = 0; i < points.length; i++) {
+      const [px, py] = points[i];
+      const [qx, qy] = points[(i + 1) % points.length];
+      const ex = qx - px, ey = qy - py;
+      const den = ux * ey - uy * ex;
+      if (Math.abs(den) < 1e-9) continue;
+      const t = (px * ey - py * ex) / den;
+      const s = (px * uy - py * ux) / den;
+      if (t > 0 && s >= -1e-9 && s <= 1 + 1e-9) best = Math.min(best, t);
+    }
+    return Number.isFinite(best) ? best : 0;
+  }
+
+  function rectPoints(hw, hh) {
+    return [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]];
+  }
+
+  // Geometry of an image node relative to its center, or null if the node isn't showing an image.
+  // An explicitly given shape becomes a frame drawn around the image.
+  function imageLayout(n) {
+    const img = n.url ? nodeImage(n.url) : null;
+    if (!img) return null;
+    const { w, h } = imageNodeSize(n, img);
+    const sc = n.sizeGiven ? nodeScale(n.size) : 1;
+    const shape = (n.shapeGiven && NODE_SHAPES.includes(n.shape) && n.shape !== "none") ? n.shape : "";
+    const pad = shape ? Math.max(3, 6 * sc) : 0;
+    const W = w / 2 + pad, H = h / 2 + pad;
+
+    let frame = null;
+    let outline;
+    if (shape === "circle") {
+      frame = { r: Math.hypot(W, H) };
+    } else if (shape === "square") {
+      frame = { points: rectPoints(W, H), rx: Math.min(12 * sc, W, H) };
+    } else if (shape === "diamond") {
+      frame = { points: [[0, -2 * H], [2 * W, 0], [0, 2 * H], [-2 * W, 0]] };
+    } else if (shape === "triangle") {
+      frame = { points: [[0, -3 * H], [2 * W, H], [-2 * W, H]] };
+    } else if (shape === "hex") {
+      const hw = W / 0.55;
+      frame = { points: [[-W, -H], [W, -H], [hw, 0], [W, H], [-W, H], [-hw, 0]] };
+    }
+    if (frame && frame.points) outline = frame.points;
+    else if (!frame) outline = rectPoints(w / 2 + 2, h / 2 + 2);
+
+    const bounds = frame && frame.r
+      ? { left: -frame.r, top: -frame.r, right: frame.r, bottom: frame.r }
+      : {
+          left: Math.min(...outline.map(p => p[0])),
+          top: Math.min(...outline.map(p => p[1])),
+          right: Math.max(...outline.map(p => p[0])),
+          bottom: Math.max(...outline.map(p => p[1])),
+        };
+
+    return {
+      w, h, sc, frame, bounds,
+      reach: (ux, uy) => (frame && frame.r) ? frame.r : rayExit(outline, ux, uy),
+    };
+  }
+
+  // reachA/reachB give the distance from a node's center to its edge in a direction
+  function edgeEndpoints(a, b, reachA, reachB) {
     const ax = a[0], ay = a[1];
     const bx = b[0], by = b[1];
     const dx = bx - ax, dy = by - ay;
     const len = Math.hypot(dx, dy) || 1;
     const ux = dx / len, uy = dy / len;
 
-    const ra = nodeRadius(shapeA, sizeA);
-    const rb = nodeRadius(shapeB, sizeB);
+    const ra = reachA(ux, uy);
+    const rb = reachB(-ux, -uy);
 
     const x1 = ax + ux * ra;
     const y1 = ay + uy * ra;
@@ -1331,6 +1455,16 @@ const signInResult = await completeSignIn();
     $svg.appendChild(viewportGroup);
     applyViewportTransform();
 
+    const imageLayouts = new Map();
+    for (const [id, n] of diagram.nodes.entries()) {
+      const layout = imageLayout(n);
+      if (layout) imageLayouts.set(id, layout);
+    }
+    const reachOf = (node) => {
+      const layout = imageLayouts.get(node.id);
+      return layout ? layout.reach : () => nodeRadius(node.shape, node.size);
+    };
+
     // Edge rendering
     for (const e of diagram.edges) {
       const fromPos = state.pos[e.from];
@@ -1339,7 +1473,7 @@ const signInResult = await completeSignIn();
       const toNode = diagram.nodes.get(e.to);
       if (!fromPos || !toPos || !fromNode || !toNode) continue;
 
-      const { x1, y1, x2, y2, ux, uy } = edgeEndpoints(fromPos, toPos, fromNode.shape, fromNode.size, toNode.shape, toNode.size);
+      const { x1, y1, x2, y2, ux, uy } = edgeEndpoints(fromPos, toPos, reachOf(fromNode), reachOf(toNode));
 
       const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
 
@@ -1434,6 +1568,14 @@ const signInResult = await completeSignIn();
       ].filter(Boolean).join("\n");
       title.textContent = tText;
       g.appendChild(title);
+
+      const layout = imageLayouts.get(id);
+      if (layout) {
+        renderImageNode(g, n, id, x, y, layout, fillCol, strokeCol);
+        g.addEventListener("pointerdown", (ev) => startDrag(ev, id));
+        nodeLayer.appendChild(g);
+        continue;
+      }
 
       // Shape
       const shape = (n.shape && NODE_SHAPES.includes(n.shape)) ? n.shape : "circle";
@@ -1550,6 +1692,84 @@ const signInResult = await completeSignIn();
       g.addEventListener("pointerdown", (ev) => startDrag(ev, id));
 
       nodeLayer.appendChild(g);
+    }
+  }
+
+  function renderImageNode(g, n, id, x, y, layout, fillCol, strokeCol) {
+    const { w, h, sc, frame, bounds } = layout;
+    const shadow = "drop-shadow(0px 8px 18px rgba(0,0,0,0.45))";
+
+    if (frame) {
+      let el;
+      if (frame.r) {
+        el = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        el.setAttribute("cx", x);
+        el.setAttribute("cy", y);
+        el.setAttribute("r", frame.r);
+      } else if (frame.rx !== undefined) {
+        el = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        el.setAttribute("x", x + bounds.left);
+        el.setAttribute("y", y + bounds.top);
+        el.setAttribute("width", bounds.right - bounds.left);
+        el.setAttribute("height", bounds.bottom - bounds.top);
+        el.setAttribute("rx", frame.rx);
+      } else {
+        el = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+        el.setAttribute("points", frame.points.map(([px, py]) => `${x + px},${y + py}`).join(" "));
+      }
+      el.setAttribute("fill", fillCol);
+      el.setAttribute("stroke", strokeCol);
+      el.setAttribute("stroke-width", "2.2");
+      el.setAttribute("filter", shadow);
+      el.style.pointerEvents = "none";
+      g.appendChild(el);
+    }
+
+    const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
+    image.setAttribute("href", n.url);
+    image.setAttribute("x", x - w / 2);
+    image.setAttribute("y", y - h / 2);
+    image.setAttribute("width", w);
+    image.setAttribute("height", h);
+    image.setAttribute("preserveAspectRatio", "xMidYMid meet");
+    if (!frame) image.setAttribute("filter", shadow);
+    image.style.pointerEvents = "none";
+    g.appendChild(image);
+
+    // Transparent hit target covering the whole node so it stays draggable/clickable
+    const hit = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    hit.setAttribute("x", x + bounds.left);
+    hit.setAttribute("y", y + bounds.top);
+    hit.setAttribute("width", bounds.right - bounds.left);
+    hit.setAttribute("height", bounds.bottom - bounds.top);
+    hit.setAttribute("fill", "transparent");
+    hit.setAttribute("stroke", "none");
+    hit.style.pointerEvents = "all";
+    hit.style.cursor = "pointer";
+    hit.addEventListener("click", (ev) => {
+      if (dragging && dragging.id === id) return;
+      ev.stopPropagation();
+      safeOpen(n.url);
+    });
+    g.appendChild(hit);
+
+    if (n.text) {
+      const fontSize = Math.max(10, Math.round(13 * sc));
+      const textEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      textEl.setAttribute("x", x);
+      textEl.setAttribute("y", y + bounds.bottom + 4 + fontSize / 2);
+      textEl.setAttribute("text-anchor", "middle");
+      textEl.setAttribute("dominant-baseline", "middle");
+      textEl.setAttribute("font-family", "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial");
+      textEl.setAttribute("font-size", String(fontSize));
+      textEl.setAttribute("font-weight", "700");
+      textEl.setAttribute("fill", "rgba(232,237,243,0.92)");
+      textEl.setAttribute("paint-order", "stroke");
+      textEl.setAttribute("stroke", "rgba(0,0,0,0.6)");
+      textEl.setAttribute("stroke-width", "3");
+      textEl.style.pointerEvents = "none";
+      textEl.textContent = truncateLabel(n.text, 22);
+      g.appendChild(textEl);
     }
   }
 
