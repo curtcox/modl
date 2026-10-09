@@ -3,7 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Diagram Editor (SFWA)</title>
+  <!-- Ported from https://github.com/curtcox/SFWA/blob/90249b72f8741a3a6db5e3f5cfa042df12bc5f75/diagram.html
+       by way of https://github.com/curtcox/hashbin.org/blob/main/scripts/reports/pages/diagram-oauth.html,
+       which saves diagrams on hashbin.org (signing in with HashBin OAuth) and loads them back by 256t CID.
+       Here a URL fragment that is a valid 256t string (#<cid>) loads that diagram. -->
+  <title>Diagram Editor</title>
   <style>
     :root {
       --bg: #0b0d10;
@@ -22,7 +26,7 @@
     html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); }
     .app { height: 100%; display: flex; flex-direction: column; }
     .topbar {
-      display: flex; gap: 10px; align-items: center;
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
       padding: 10px 12px; border-bottom: 1px solid var(--line);
       background: linear-gradient(180deg, #0e1218, #0b0d10);
     }
@@ -207,22 +211,62 @@
     .app.mode-help textarea { display: none; }
     .app.mode-help .errorBox { display: none; }
     .app.mode-help .help { max-height: none; flex: 1; }
+
+    .btn.primary { background: rgba(120, 219, 169, 0.18); border-color: rgba(120, 219, 169, 0.55); }
+    .btn.primary:hover { background: rgba(120, 219, 169, 0.28); }
+    .btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+    .savedState a { color: var(--good); }
+    .savedState.dirty, .savedState.dirty a { color: var(--warn); }
+
+    dialog {
+      width: min(460px, calc(100vw - 32px));
+      background: var(--panel); color: var(--text);
+      border: 1px solid var(--line); border-radius: 14px;
+      padding: 16px;
+    }
+    dialog::backdrop { background: rgba(0,0,0,0.55); }
+    dialog h2 { margin: 0 0 6px; font-size: 16px; }
+    dialog p { margin: 6px 0; font-size: 13px; color: var(--muted); }
+    dialog a { color: #8ab4ff; }
+    dialog label { display: block; margin-top: 12px; font-size: 13px; font-weight: 600; }
+    dialog input, dialog select {
+      width: 100%; margin-top: 4px; padding: 8px 10px;
+      background: var(--panel2); color: var(--text);
+      border: 1px solid var(--line); border-radius: 10px;
+      font-family: var(--mono); font-size: 13px;
+    }
+    dialog .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+    .saveMessage { margin-top: 12px; font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .saveMessage.ok { color: var(--good); }
+    .saveMessage.err { color: var(--bad); }
+    .account { display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--muted); }
+    .account .who { color: var(--text); }
+    dialog dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 12px 0 0; font-size: 13px; }
+    dialog dt { color: var(--muted); }
+    dialog dd { margin: 0; }
   </style>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
     <div class="title">Diagram Editor</div>
-    <div class="pill">SFWA • all state in URL hash</div>
+    <div class="pill">HashBin • saved diagrams load from a 256t CID in the URL</div>
     <button class="btn" id="btnViewSource" type="button">Source</button>
     <button class="btn" id="btnViewDiagram" type="button">Diagram</button>
     <button class="btn" id="btnViewHelp" type="button">Help</button>
     <button class="btn active" id="btnViewSplit" type="button">Split</button>
     <div class="spacer"></div>
+    <button class="btn primary" id="btnSave" type="button" title="Store this diagram on hashbin.org and put its 256t CID in the URL.">Save to HashBin</button>
     <button class="btn secondary" id="btnCommit" title="Push a history entry (Back/Forward friendly).">Commit snapshot</button>
     <button class="btn" id="btnCopy">Copy URL</button>
     <button class="btn secondary" id="btnReset">Reset</button>
+    <div class="account">
+      <span id="accountStatus">HashBin: not connected</span>
+      <button class="btn secondary" id="btnConnect" type="button">Connect</button>
+      <button class="btn secondary" id="btnDisconnect" type="button" hidden>Disconnect</button>
+    </div>
     <div class="status">
+      <span id="savedState" class="savedState">Not saved</span>
       <span id="parseStatus" class="ok">OK</span>
       <span id="hashStatus" class="pill">hash: 0 chars</span>
     </div>
@@ -296,6 +340,29 @@
             Tip: use <b>Commit snapshot</b> to create Back/Forward checkpoints while you edit.
           </div>
         </div>
+
+        <h3>Saving on HashBin</h3>
+        <div class="box">
+          <div>
+            <b>Save to HashBin</b> uploads the source and node positions to hashbin.org, paid from your
+            account balance (usually $0.01). The URL becomes <code>#&lt;CID&gt;</code>, where the CID is a
+            <a href="https://256t.org" target="_blank" rel="noopener noreferrer">256t</a> string:
+            a short link anyone can open; the diagram is fetched from 256t.us.
+          </div>
+          <div style="margin-top:8px;">
+            The first save asks you to <b>Connect</b>: you sign in on hashbin.org and approve this editor.
+            This browser then stays connected (renewed each time you use it, for up to 30 days idle) until you
+            press <b>Disconnect</b> or remove the editor from your HashBin account. Diagrams are kept for your
+            account's default retention.
+          </div>
+          <div style="margin-top:8px;">
+            Saved content can't change, so editing a saved diagram switches the URL back to the long
+            <code>#h1=</code> form until you save again. Saving an unchanged diagram again extends how long it's kept.
+          </div>
+          <div style="margin-top:8px;">
+            <code>#&lt;CID&gt;</code> also opens any plain-text file on HashBin as diagram source.
+          </div>
+        </div>
       </div>
     </div>
 
@@ -309,16 +376,151 @@
       </div>
 
       <div class="legend">
-        <div><b>Shareable state:</b> source + node positions are encoded in the URL hash.</div>
+        <div><b>Shareable state:</b> source + node positions are encoded in the URL hash, or saved on HashBin and referenced by CID.</div>
         <div class="row">
-          <span>Try: edit the text, then copy the URL.</span>
+          <span>Try: edit the text, then Save to HashBin for a short link.</span>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<script>
+<dialog id="saveDialog">
+  <form id="saveForm" method="dialog">
+    <h2>Save to HashBin</h2>
+    <div id="connectPrompt">
+      <p>
+        Saving stores this diagram on hashbin.org, paid from your account balance, and replaces the URL with its 256t CID.
+      </p>
+      <p>
+        Connect your HashBin account first: you'll sign in and approve this editor on hashbin.org, then come back here
+        with your diagram intact. This browser stays connected, so you won't need to do this again.
+      </p>
+    </div>
+    <div id="savePanel" hidden>
+      <p>Stores this diagram on hashbin.org, paid from your account balance, and replaces the URL with its 256t CID.</p>
+      <dl>
+        <dt>Balance</dt><dd id="saveBalance">…</dd>
+        <dt>Kept for</dt><dd id="saveRetention">…</dd>
+        <dt>Cost</dt><dd id="saveQuote">…</dd>
+      </dl>
+      <p>Change how long new saves are kept in your <a id="settingsLink" href="https://hashbin.org/account.html" target="_blank" rel="noopener noreferrer">HashBin account settings</a>.</p>
+    </div>
+    <div id="saveMessage" class="saveMessage"></div>
+    <div class="actions">
+      <button class="btn secondary" id="btnSaveCancel" type="button">Close</button>
+      <button class="btn primary" id="btnSaveConfirm" type="submit">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script type="module">
+// -----------------------------
+// HashBin OAuth (runs before the editor boots so a returning sign-in restores the diagram first)
+// -----------------------------
+// The public client ID of this editor's app registered on hashbin.org with the redirect URI
+// https://curtcox.github.io/modl/. It isn't a secret: PKCE protects the sign-in, and hashbin.org only
+// sends codes to the registered address. Empty means saving isn't set up yet; loading still works.
+const CLIENT_ID = "app_1fe78cf6-21fc-4491-abc9-e0aefca53505";
+const OAUTH_SCOPES = ["content:write", "balance:read"];
+const RETURN_KEY = "hashbin-diagram-oauth-return:";
+
+// ?api=, ?content= and ?client_id= point the page at a local dev server for testing. Only localhost is
+// accepted, so a crafted link can't send someone's sign-in anywhere but hashbin.org.
+function localOverride(name, fallback) {
+  const value = new URLSearchParams(location.search).get(name);
+  if (!value) return fallback;
+  try {
+    const url = new URL(value);
+    if (url.protocol === "http:" && ["localhost", "127.0.0.1"].includes(url.hostname)) return url.origin;
+  } catch {
+    // fall through to the default
+  }
+  return fallback;
+}
+const API_BASE = localOverride("api", "https://hashbin.org");
+const CONTENT_BASE = localOverride("content", "https://256t.us");
+const IS_LOCAL_API = API_BASE !== "https://hashbin.org";
+const clientId = (IS_LOCAL_API && new URLSearchParams(location.search).get("client_id")) || CLIENT_ID;
+
+// Loaded dynamically so the editor still works (without saving) when hashbin.org can't be reached
+let HashBinClient = null;
+if (clientId) {
+  try {
+    ({ HashBinClient } = await import(`${API_BASE}/sdk/hashbin.js`));
+  } catch {
+    // oauthProblem explains this to the user
+  }
+}
+const oauthProblem = !clientId ? "HashBin sign-in isn't set up for this page yet"
+  : !HashBinClient ? "Couldn't load HashBin sign-in from hashbin.org; reload to try again"
+  : null;
+
+// hashbin.org returns to exactly this address, so it keeps only the testing overrides from the query.
+// /modl/index.html and /modl/ are the same page; only the latter is registered.
+function redirectUri() {
+  const params = new URLSearchParams();
+  const current = new URLSearchParams(location.search);
+  if (IS_LOCAL_API) {
+    for (const name of ["api", "content", "client_id"]) {
+      if (current.get(name)) params.set(name, current.get(name));
+    }
+  }
+  const query = params.toString();
+  return location.origin + location.pathname.replace(/index\.html$/, "") + (query ? `?${query}` : "");
+}
+
+function storage(kind) {
+  try { return window[kind]; } catch { return null; }
+}
+
+const oauth = !oauthProblem
+  ? new HashBinClient({
+      clientId,
+      redirectUri: redirectUri(),
+      baseUrl: API_BASE,
+      contentBaseUrl: CONTENT_BASE,
+      storage: storage("localStorage"),
+      transactionStorage: storage("sessionStorage"),
+    })
+  : null;
+
+// Leaves for hashbin.org's approval page, remembering the diagram (the URL hash doesn't survive the trip)
+async function startSignIn({ resumeSave }) {
+  const { url, state } = await oauth.authorize({ scopes: OAUTH_SCOPES, mode: "manual" });
+  storage("sessionStorage")?.setItem(RETURN_KEY + state, JSON.stringify({ hash: location.hash, resumeSave }));
+  location.href = url;
+}
+
+// Handles ?code=&state= (or ?error=) on the way back from hashbin.org
+async function completeSignIn() {
+  const params = new URLSearchParams(location.search);
+  const state = params.get("state");
+  if (!state || (!params.get("code") && !params.get("error"))) return null;
+
+  const store = storage("sessionStorage");
+  const key = RETURN_KEY + state;
+  let saved = null;
+  try { saved = JSON.parse(store?.getItem(key) || "null"); } catch { saved = null; }
+  store?.removeItem(key);
+  history.replaceState(null, "", redirectUri() + (saved?.hash || ""));
+
+  if (params.get("error")) {
+    return { error: (params.get("error") === "access_denied") ? "HashBin access wasn't approved." : `HashBin sign-in failed: ${params.get("error")}` };
+  }
+  if (!oauth || !saved) {
+    return { error: "HashBin sign-in couldn't be completed in this tab. Press Connect to try again." };
+  }
+  try {
+    await oauth.handleCallback({ search: params.toString() });
+    return { connected: true, resumeSave: saved.resumeSave };
+  } catch (error) {
+    return { error: `HashBin sign-in failed: ${error.message}` };
+  }
+}
+
+const signInResult = await completeSignIn();
+
 (() => {
   // -----------------------------
   // Reserved vocab
@@ -350,6 +552,7 @@
   const $parseStatus = document.getElementById("parseStatus");
   const $hashStatus = document.getElementById("hashStatus");
   const $errorBox = document.getElementById("errorBox");
+  const $savedState = document.getElementById("savedState");
   const $svgWrap = document.querySelector(".svgWrap");
   const $btnZoomOut = document.getElementById("btnZoomOut");
   const $btnZoomIn = document.getElementById("btnZoomIn");
@@ -507,6 +710,7 @@
   });
 
   document.getElementById("btnReset").addEventListener("click", () => {
+    saved = null;
     applyState(makeDefaultState(), { replace: true });
     renderAll();
     syncHash({ replace: true });
@@ -569,16 +773,126 @@
     return JSON.parse(json);
   }
 
+  // -----------------------------
+  // HashBin storage: a URL fragment that is a 256t string (#<cid>) names a saved diagram on 256t.us
+  // -----------------------------
+
+  // Content at or below this size is stored inside its CID and costs nothing (src/utils/hash256t.js)
+  const INLINE_CONTENT_THRESHOLD = 64;
+
+  // The CID of the last save or load, and the diagram it holds in savePayload form
+  let saved = null; // { cid, payload }
+
+  // Canonical JSON (sorted positions) so an unchanged diagram always produces the same bytes and CID
+  function savePayload(st) {
+    const pos = {};
+    for (const id of Object.keys(st.pos).sort()) pos[id] = st.pos[id];
+    return JSON.stringify({ format: "hashbin-diagram", version: 1, src: st.src, pos });
+  }
+
+  // A 256t string (https://256t.org) is base64url: 8 characters holding the content's length in bytes,
+  // then the content itself if that's at most 64 bytes, or else its SHA-512 hash (always 86 characters)
+  function cidContentLength(cid) {
+    return base64UrlToBytes(cid.slice(0, 8)).reduce((total, byte) => total * 256 + byte, 0);
+  }
+
+  function isValid256t(s) {
+    if (!/^[A-Za-z0-9_-]{8,94}$/.test(s)) return false;
+    const length = cidContentLength(s);
+    const expectedRest = (length <= INLINE_CONTENT_THRESHOLD) ? Math.ceil((length * 4) / 3) : 86;
+    return s.length - 8 === expectedRest;
+  }
+
+  // Any other fragment (such as #h1=...) is left to decodeState
+  function cidFromHash(hash) {
+    const raw = (hash.startsWith("#") ? hash.slice(1) : hash).trim();
+    return isValid256t(raw) ? raw : null;
+  }
+
+  function stateFromContent(text) {
+    try {
+      const doc = JSON.parse(text);
+      if (doc && typeof doc === "object" && typeof doc.src === "string") {
+        return { src: doc.src, pos: (doc.pos && typeof doc.pos === "object") ? doc.pos : {} };
+      }
+    } catch {
+      // not JSON: treat the whole file as diagram source
+    }
+    return { src: text, pos: {} };
+  }
+
+  async function loadFromCid(cid) {
+    $savedState.className = "savedState";
+    $savedState.textContent = "Loading…";
+    let text;
+    try {
+      // Small content is inside the CID itself, so there's nothing to download
+      const response = (cidContentLength(cid) <= INLINE_CONTENT_THRESHOLD)
+        ? new Response(base64UrlToBytes(cid.slice(8)))
+        : await fetch(`${CONTENT_BASE}/${cid}`);
+      if (!response.ok) {
+        const reason = (response.status === 404) ? "not found (it may have expired or been deleted)" : `HTTP ${response.status}`;
+        showLoadError(`Couldn't load ${cid} from 256t.us: ${reason}.`);
+        return;
+      }
+      text = await response.text();
+    } catch (error) {
+      showLoadError(`Couldn't reach 256t.us to load ${cid}: ${error.message}`);
+      return;
+    }
+    applyState(stateFromContent(text), { replace: true, fromHash: true });
+    saved = { cid, payload: text };
+    renderAll();
+    // Plain-text source gets laid out on load; that layout isn't an edit, so the URL keeps the CID
+    saved.payload = savePayload(state);
+    updateSavedState();
+  }
+
+  function showLoadError(message) {
+    saved = null;
+    applyState({ src: "", pos: {} }, { replace: true });
+    renderAll();
+    $errorBox.classList.add("show");
+    $errorBox.textContent = message;
+    $parseStatus.textContent = "Load failed";
+    $parseStatus.className = "err";
+    updateSavedState();
+  }
+
+  function shortCid(cid) {
+    return cid.length > 16 ? `${cid.slice(0, 8)}…${cid.slice(-6)}` : cid;
+  }
+
+  function updateSavedState() {
+    $savedState.textContent = "";
+    if (!saved) {
+      $savedState.className = "savedState";
+      $savedState.textContent = "Not saved";
+      return;
+    }
+    const link = document.createElement("a");
+    link.href = `${CONTENT_BASE}/${saved.cid}`;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.title = saved.cid;
+    link.textContent = shortCid(saved.cid);
+    const dirty = savePayload(state) !== saved.payload;
+    $savedState.className = dirty ? "savedState dirty" : "savedState";
+    $savedState.append(dirty ? "Unsaved changes since " : "Saved as ", link);
+  }
+
   let ignoreHashChange = false;
 
   function syncHash({ replace } = { replace: true }) {
-    const encoded = encodeState(state);
-    const newHash = "#" + encoded;
+    // While the diagram matches what's on HashBin, the short CID link describes it completely
+    const unchanged = saved && savePayload(state) === saved.payload;
+    const newHash = unchanged ? "#" + saved.cid : "#" + encodeState(state);
     ignoreHashChange = true;
     if (replace) history.replaceState(null, "", newHash);
     else history.pushState(null, "", newHash);
     ignoreHashChange = false;
     updateHashStatus();
+    updateSavedState();
   }
 
   function updateHashStatus() {
@@ -587,6 +901,17 @@
 
   window.addEventListener("hashchange", () => {
     if (ignoreHashChange) return;
+    const cid = cidFromHash(location.hash);
+    if (cid !== null) {
+      if (saved && saved.cid === cid) {
+        // Back to the saved version: no need to fetch what we already have
+        applyState(stateFromContent(saved.payload), { replace: true, fromHash: true });
+        renderAll();
+      } else {
+        loadFromCid(cid);
+      }
+      return;
+    }
     const incoming = decodeState(location.hash);
     if (!incoming) return;
     applyState(incoming, { replace: true, fromHash: true });
@@ -1423,6 +1748,7 @@
 
     render(diagram);
     updateHashStatus();
+    updateSavedState();
   }
 
   // Editor input -> parse/render -> hash
@@ -1441,9 +1767,266 @@
   });
 
   // -----------------------------
+  // HashBin account + save dialog
+  // -----------------------------
+  const $saveDialog = document.getElementById("saveDialog");
+  const $saveForm = document.getElementById("saveForm");
+  const $connectPrompt = document.getElementById("connectPrompt");
+  const $savePanel = document.getElementById("savePanel");
+  const $saveBalance = document.getElementById("saveBalance");
+  const $saveRetention = document.getElementById("saveRetention");
+  const $saveQuote = document.getElementById("saveQuote");
+  const $saveMessage = document.getElementById("saveMessage");
+  const $btnSaveConfirm = document.getElementById("btnSaveConfirm");
+  const $accountStatus = document.getElementById("accountStatus");
+  const $btnConnect = document.getElementById("btnConnect");
+  const $btnDisconnect = document.getElementById("btnDisconnect");
+
+  document.getElementById("settingsLink").href = `${API_BASE}/account.html`;
+
+  class NotConnected extends Error {}
+
+  function dollars(cents) {
+    return `$${(cents / 100).toFixed(2)}`;
+  }
+
+  function setSaveMessage(text, kind) {
+    $saveMessage.textContent = text;
+    $saveMessage.className = kind ? `saveMessage ${kind}` : "saveMessage";
+  }
+
+  function isConnected() {
+    return Boolean(oauth && oauth.getTokens()?.refreshToken);
+  }
+
+  // Calls hashbin.org as the signed-in user. The SDK renews an expired access token first; a 401 gets one
+  // more renewal in case the token expired in flight. If renewal fails the sign-in is gone (revoked, or idle
+  // past 30 days) and the SDK has already forgotten it.
+  // Refresh tokens are single-use, so concurrent calls must share one renewal or the losers sign the user out
+  let renewal = null;
+  function renew() {
+    if (!renewal) renewal = oauth.refreshAccessToken().finally(() => { renewal = null; });
+    return renewal;
+  }
+
+  async function authed(path, options = {}) {
+    if (!isConnected()) throw new NotConnected("Not connected to HashBin.");
+    let response;
+    try {
+      const expiresAt = oauth.getTokens()?.expiresAt || 0;
+      if (renewal || expiresAt <= Date.now() + 30000) await renew();
+      response = await oauth.authorizedFetch(path, options);
+      if (response.status === 401) {
+        await renew();
+        response = await oauth.authorizedFetch(path, options);
+      }
+    } catch (error) {
+      if (!isConnected()) throw new NotConnected("Your HashBin sign-in has expired or was revoked. Connect again.");
+      throw error;
+    }
+    if (response.status === 401) {
+      oauth.clearTokens();
+      throw new NotConnected("Your HashBin sign-in has expired or was revoked. Connect again.");
+    }
+    return response;
+  }
+
+  async function readJson(response) {
+    const text = await response.text();
+    try { return JSON.parse(text); } catch { return { message: text }; }
+  }
+
+  function showAccount(text, connected) {
+    $accountStatus.textContent = text;
+    $btnConnect.hidden = connected || !oauth;
+    $btnDisconnect.hidden = !connected;
+  }
+
+  let balanceCents = null;
+
+  async function refreshAccount() {
+    if (!oauth) {
+      showAccount(oauthProblem, false);
+      return;
+    }
+    if (!isConnected()) {
+      showAccount("HashBin: not connected", false);
+      return;
+    }
+    showAccount("HashBin: connected", true);
+    try {
+      const response = await authed("/api/balance");
+      const data = await readJson(response);
+      if (!response.ok) throw new Error(data.message || `HTTP ${response.status}`);
+      balanceCents = data.balance_cents;
+      showAccount(`HashBin balance: ${dollars(balanceCents)}`, true);
+    } catch (error) {
+      if (error instanceof NotConnected) showAccount("HashBin: sign-in expired", false);
+      else showAccount("HashBin: connected (balance unavailable)", true);
+    }
+  }
+
+  async function retentionMonths() {
+    const response = await authed("/api/account/settings");
+    const data = await readJson(response);
+    if (!response.ok) throw new Error(data.message || `HTTP ${response.status}`);
+    // Uploads made with a sign-in use this; unset means 1 month (src/api/content.js)
+    return parseInt(data.default_retention_months || "1", 10) || 1;
+  }
+
+  function monthsLabel(months) {
+    if (months % 12 === 0) return `${months / 12} year${months === 12 ? "" : "s"}`;
+    return `${months} month${months === 1 ? "" : "s"}`;
+  }
+
+  async function quoteCents(size, months) {
+    if (size <= INLINE_CONTENT_THRESHOLD) return 0;
+    const response = await fetch(`${API_BASE}/api/payments/calculate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ size_bytes: size, retention_months: months }),
+    });
+    const data = await readJson(response);
+    if (!response.ok) throw new Error(`Couldn't get a price quote (HTTP ${response.status}).`);
+    return data.cost_cents;
+  }
+
+  function showConnectMode(message) {
+    $connectPrompt.hidden = false;
+    $savePanel.hidden = true;
+    $btnSaveConfirm.textContent = "Connect and save";
+    $btnSaveConfirm.disabled = !oauth;
+    setSaveMessage(message || (oauth ? "" : `${oauthProblem}.`), (message || !oauth) ? "err" : "");
+  }
+
+  async function showSaveMode() {
+    $connectPrompt.hidden = true;
+    $savePanel.hidden = false;
+    $btnSaveConfirm.textContent = "Save";
+    $btnSaveConfirm.disabled = true;
+    setSaveMessage("", "");
+    $saveBalance.textContent = $saveRetention.textContent = $saveQuote.textContent = "…";
+    const size = new TextEncoder().encode(savePayload(state)).length;
+    try {
+      const [months] = await Promise.all([retentionMonths(), refreshAccount()]);
+      if (!isConnected()) throw new NotConnected("Your HashBin sign-in has expired or was revoked. Connect again.");
+      $saveBalance.textContent = (balanceCents === null) ? "unavailable" : dollars(balanceCents);
+      $saveRetention.textContent = `${monthsLabel(months)} (your account default)`;
+      const cost = await quoteCents(size, months);
+      $saveQuote.textContent = cost ? `${dollars(cost)} for ${size} bytes` : `Free: ${size} bytes is small enough to live inside its CID`;
+      if (balanceCents !== null && cost > balanceCents) {
+        setSaveMessage(`Your balance is ${dollars(balanceCents)}; add funds at ${API_BASE}/deposit.html to save this.`, "err");
+        return;
+      }
+      $btnSaveConfirm.disabled = false;
+    } catch (error) {
+      if (error instanceof NotConnected) {
+        showConnectMode(error.message);
+        return;
+      }
+      setSaveMessage(error.message, "err");
+      $btnSaveConfirm.disabled = false;
+    }
+  }
+
+  function openSaveDialog(message) {
+    if (!$saveDialog.open) $saveDialog.showModal();
+    if (isConnected() && !message) showSaveMode();
+    else showConnectMode(message);
+  }
+
+  async function save() {
+    const payload = savePayload(state);
+    $btnSaveConfirm.disabled = true;
+    setSaveMessage("Saving…", "");
+    try {
+      const formData = new FormData();
+      formData.append("content", new Blob([payload], { type: "application/json" }), "diagram.json");
+      let response;
+      try {
+        response = await authed("/api/content", { method: "POST", body: formData });
+      } catch (error) {
+        if (error instanceof NotConnected) {
+          refreshAccount();
+          showConnectMode(error.message);
+          return;
+        }
+        setSaveMessage(`Couldn't reach hashbin.org: ${error.message}`, "err");
+        return;
+      }
+      const data = await readJson(response);
+
+      if (!response.ok) {
+        const reason = String(data.message || data.error || JSON.stringify(data));
+        const sentence = /[.!?]$/.test(reason) ? reason : `${reason}.`;
+        const hint = (data.error === "insufficient_balance") ? ` Add funds at ${API_BASE}/deposit.html.` : "";
+        setSaveMessage(`Save failed (HTTP ${response.status}): ${sentence}${hint}`, "err");
+        return;
+      }
+
+      saved = { cid: data.cid, payload };
+      syncHash({ replace: false });
+      if (typeof data.new_balance_cents === "number") {
+        balanceCents = data.new_balance_cents;
+        $saveBalance.textContent = dollars(balanceCents);
+        showAccount(`HashBin balance: ${dollars(balanceCents)}`, true);
+      }
+      const expires = data.expires_at ? new Date(data.expires_at).toLocaleDateString() : "";
+      const what = (response.status === 201) ? "Saved" : "Already on HashBin; kept longer";
+      const cost = data.cost_cents ? `Charged ${dollars(data.cost_cents)}. ` : "";
+      setSaveMessage(`${what}. ${cost}${expires ? `Kept until ${expires}. ` : ""}The URL now loads it by CID:\n${data.cid}`, "ok");
+    } finally {
+      if (isConnected()) $btnSaveConfirm.disabled = false;
+    }
+  }
+
+  document.getElementById("btnSave").addEventListener("click", () => openSaveDialog());
+  document.getElementById("btnSaveCancel").addEventListener("click", () => $saveDialog.close());
+
+  $saveForm.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    if (!isConnected()) {
+      if (!oauth) return;
+      $btnSaveConfirm.disabled = true;
+      setSaveMessage("Opening hashbin.org…", "");
+      await startSignIn({ resumeSave: true });
+      return;
+    }
+    await save();
+  });
+
+  $btnConnect.addEventListener("click", () => {
+    if (oauth) startSignIn({ resumeSave: false });
+  });
+
+  $btnDisconnect.addEventListener("click", async () => {
+    const tokens = oauth.getTokens();
+    oauth.clearTokens();
+    balanceCents = null;
+    showAccount("HashBin: not connected", false);
+    if (tokens?.refreshToken) {
+      // Revoking the refresh token ends this browser's sign-in; the approval itself stays in the
+      // HashBin account until the user removes it there
+      try {
+        await fetch(`${API_BASE}/oauth/revoke`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: tokens.refreshToken, token_type_hint: "refresh_token" }),
+        });
+      } catch {
+        // Local sign-in is already forgotten; the token expires on its own
+      }
+    }
+  });
+
+  // -----------------------------
   // Boot from URL hash (if present)
   // -----------------------------
   function boot() {
+    const cid = cidFromHash(location.hash);
+    if (cid !== null) {
+      return loadFromCid(cid);
+    }
     const incoming = decodeState(location.hash);
     if (incoming) {
       applyState(incoming, { replace: true, fromHash: true });
@@ -1454,7 +2037,14 @@
     renderAll();
   }
 
-  boot();
+  const booted = boot();
+
+  refreshAccount();
+  // A resumed save must quote and store the diagram the user left with, so wait for it to load
+  Promise.resolve(booted).then(() => {
+    if (signInResult?.error) openSaveDialog(signInResult.error);
+    else if (signInResult?.resumeSave) openSaveDialog();
+  });
 })();
 </script>
 </body>
