@@ -305,6 +305,10 @@
             — but any can be omitted.
           </div>
           <div style="margin-top:8px;">
+            Quote an id or text with <code>"…"</code> or <code>'…'</code> to take it literally:
+            <code>"v1.2" square "Input -> Output #1"</code>. Quoted words are never keywords or URLs.
+          </div>
+          <div style="margin-top:8px;">
             URL token: <code>/example.com</code> becomes <code>https://example.com</code>.
             You can also use <code>https://...</code> directly.
           </div>
@@ -939,18 +943,49 @@ const signInResult = await completeSignIn();
   // -----------------------------
   // Parsing DSL
   // -----------------------------
-  function stripInlineComment(line) {
-    const t = line.trim();
-    if (!t) return "";
-    if (t.startsWith("#")) return "";
-    // Inline: treat first " #" as comment start (space before #)
-    const idx = line.search(/\s#/);
-    if (idx >= 0) return line.slice(0, idx).trimEnd();
-    return line.trimEnd();
-  }
-
-  function splitWS(s) {
-    return s.trim().length ? s.trim().split(/\s+/) : [];
+  // Splits a line into pieces: {type: "ws" | "arrow" | "comment", raw} and {type: "word", raw, value, quoted}.
+  // A quote opens a string only at the start of a word or right after a closing quote, and only if the same
+  // quote character closes it later on the line; otherwise it is an ordinary character. Inside a string,
+  // "->", "#" and whitespace are text. Strings and plain characters with nothing between them form one word.
+  function lexLine(line) {
+    const pieces = [];
+    const isWS = (c) => /\s/.test(c);
+    let i = 0;
+    while (i < line.length) {
+      const c = line[i];
+      if (isWS(c)) {
+        let j = i;
+        while (j < line.length && isWS(line[j])) j++;
+        pieces.push({ type: "ws", raw: line.slice(i, j) });
+        i = j;
+      } else if (c === "#" && (i === 0 || isWS(line[i - 1]))) {
+        pieces.push({ type: "comment", raw: line.slice(i) });
+        break;
+      } else if (line.startsWith("->", i)) {
+        pieces.push({ type: "arrow", raw: "->" });
+        i += 2;
+      } else {
+        const start = i;
+        let value = "";
+        let quoted = false;
+        let canOpen = true;
+        while (i < line.length && !isWS(line[i]) && !line.startsWith("->", i)) {
+          const q = line[i];
+          const close = (canOpen && (q === '"' || q === "'")) ? line.indexOf(q, i + 1) : -1;
+          if (close >= 0) {
+            value += line.slice(i + 1, close);
+            quoted = true;
+            i = close + 1;
+          } else {
+            value += q;
+            canOpen = false;
+            i++;
+          }
+        }
+        pieces.push({ type: "word", raw: line.slice(start, i), value, quoted });
+      }
+    }
+    return pieces;
   }
 
   function looksLikeUrlToken(tok) {
@@ -974,9 +1009,16 @@ const signInResult = await completeSignIn();
     return /^[A-Za-z0-9_:\-]+$/.test(id);
   }
 
-  function parseAttrs(tokens, kind) {
+  // Quoted ids may hold any characters, but not nothing
+  function idError(word, lineNo) {
+    if (word.quoted) return word.value ? "" : `Line ${lineNo+1}: empty node id`;
+    return isValidId(word.value) ? "" : `Line ${lineNo+1}: invalid node id "${word.value}"`;
+  }
+
+  function parseAttrs(words, kind) {
     // Order: style, color, url, text
-    // But each optional, so we detect by reserved sets.
+    // But each optional, so we detect by reserved sets. Quoted words are never keywords or URLs.
+    const tokens = words.map(w => w.quoted ? null : w.value);
     let i = 0;
 
     let size = "";
@@ -1011,11 +1053,12 @@ const signInResult = await completeSignIn();
       url = normalizeUrl(tokens[i++]);
     }
 
-    if (i < tokens.length) {
-      text = tokens.slice(i).join(" ");
+    const textGiven = i < words.length;
+    if (textGiven) {
+      text = words.slice(i).map(w => w.value).join(" ");
     }
 
-    return { size, style, color, url, text };
+    return { size, style, color, url, text, textGiven };
   }
 
   function parseSource(src) {
@@ -1043,49 +1086,51 @@ const signInResult = await completeSignIn();
     }
 
     for (let lineNo = 0; lineNo < lines.length; lineNo++) {
-      const raw = lines[lineNo];
-      const line = stripInlineComment(raw);
-      if (!line.trim()) continue;
+      const pieces = lexLine(lines[lineNo]);
+      const words = pieces.filter(p => p.type === "word");
+      const hasArrow = pieces.some(p => p.type === "arrow");
+      if (!words.length && !hasArrow) continue;
 
-      const trimmed = line.trim();
-      if (Object.prototype.hasOwnProperty.call(COLORS, trimmed)) {
-        background = trimmed;
+      if (!hasArrow && words.length === 1 && !words[0].quoted
+          && Object.prototype.hasOwnProperty.call(COLORS, words[0].value)) {
+        background = words[0].value;
         continue;
       }
 
-      if (line.includes("->")) {
+      if (hasArrow) {
         // Edge line (possibly chain)
-        const segs = line.split("->").map(s => s.trim()).filter(Boolean);
-        if (segs.length < 2) {
+        const segs = [[]];
+        for (const p of pieces) {
+          if (p.type === "arrow") segs.push([]);
+          else if (p.type === "word") segs[segs.length - 1].push(p);
+        }
+        const nonEmpty = segs.filter(s => s.length);
+        if (nonEmpty.length < 2) {
           errors.push(`Line ${lineNo+1}: malformed edge line`);
           continue;
         }
 
         // Last segment may contain attrs after the last node id
-        const lastTokens = splitWS(segs[segs.length - 1]);
-        if (lastTokens.length === 0) {
-          errors.push(`Line ${lineNo+1}: missing last node id`);
-          continue;
-        }
+        const lastWords = nonEmpty[nonEmpty.length - 1];
 
         const chainIds = [];
-        for (let i = 0; i < segs.length - 1; i++) {
-          const tok = splitWS(segs[i])[0];
-          if (!tok || !isValidId(tok)) {
-            errors.push(`Line ${lineNo+1}: invalid node id "${tok || segs[i]}"`);
+        for (let i = 0; i < nonEmpty.length - 1; i++) {
+          const err = idError(nonEmpty[i][0], lineNo);
+          if (err) {
+            errors.push(err);
             continue;
           }
-          chainIds.push(tok);
+          chainIds.push(nonEmpty[i][0].value);
         }
 
-        const lastId = lastTokens[0];
-        if (!isValidId(lastId)) {
-          errors.push(`Line ${lineNo+1}: invalid node id "${lastId}"`);
+        const lastErr = idError(lastWords[0], lineNo);
+        if (lastErr) {
+          errors.push(lastErr);
           continue;
         }
-        chainIds.push(lastId);
+        chainIds.push(lastWords[0].value);
 
-        const attrs = parseAttrs(lastTokens.slice(1), "edge");
+        const attrs = parseAttrs(lastWords.slice(1), "edge");
         // Apply to every edge in chain
         for (let i = 0; i < chainIds.length - 1; i++) {
           const from = chainIds[i];
@@ -1105,20 +1150,19 @@ const signInResult = await completeSignIn();
         }
       } else {
         // Node line
-        const tokens = splitWS(line);
-        const id = tokens[0];
-        if (!id || !isValidId(id)) {
-          errors.push(`Line ${lineNo+1}: invalid node id "${id || line}"`);
+        const err = idError(words[0], lineNo);
+        if (err) {
+          errors.push(err);
           continue;
         }
-        const attrs = parseAttrs(tokens.slice(1), "node");
-        const n = ensureNode(id);
+        const attrs = parseAttrs(words.slice(1), "node");
+        const n = ensureNode(words[0].value);
         if (attrs.size) { n.size = attrs.size; n.sizeGiven = true; }
         if (attrs.style) { n.shape = attrs.style; n.shapeGiven = true; }
         if (attrs.color) n.color = attrs.color;
         if (attrs.url) n.url = attrs.url;
-        if (attrs.text) n.text = attrs.text;
-        // If attrs.text is empty, we keep prior text (so a later "id" line won't wipe it accidentally).
+        if (attrs.textGiven) n.text = attrs.text;
+        // Without text we keep prior text, so a later bare "id" line won't wipe it; "" clears it explicitly.
       }
     }
 

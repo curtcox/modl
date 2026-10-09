@@ -44,12 +44,13 @@ newline      = "\n" | "\r\n" ;
 line         = [ statement ] , [ comment ] ;
 comment      = "#" , { any character } ;
                (* only at the start of the line (after optional whitespace)
-                  or directly after whitespace; a "#" inside a word is text *)
+                  or directly after whitespace, and never inside a string;
+                  a "#" inside a word is text *)
 
 statement    = background | edge-line | node-line ;
                (* tried in this order; see "Processing a line" *)
 
-background   = color ;                     (* the only word on the line *)
+background   = color ;                     (* the only word on the line, unquoted *)
 
 node-line    = id , node-attrs ;
 node-attrs   = [ size ] , [ shape ] , [ color ] , [ url ] , [ text ] ;
@@ -61,7 +62,8 @@ segment      = id , { word } ;
                   non-empty segment, and ignored in every other one *)
 edge-attrs   = [ size ] , [ line-style ] , [ color ] , [ url ] , [ text ] ;
 
-id           = id-char , { id-char } ;
+id           = id-char , { id-char } | quoted-word ;
+               (* a quoted id may hold any characters but can't be empty *)
 id-char      = "A".."Z" | "a".."z" | "0".."9" | "_" | ":" | "-" ;
 
 size         = "tiny" | "small" | "normal" | "big" | "bigger" | "huge" ;
@@ -71,22 +73,34 @@ color        = "gray" | "black" | "white" | "red" | "orange" | "yellow"
              | "green" | "teal" | "blue" | "purple" | "pink" | "brown" ;
 url          = ( "/" | "http://" | "https://" | "www." | "mailto:" ) , { non-space } ;
 text         = word , { word } ;           (* rejoined with single spaces *)
-word         = non-space , { non-space } ;</code></pre>
+word         = plain-word | quoted-word ;
+plain-word   = non-space , { non-space } ;
+               (* never contains "->", which always separates words *)
+quoted-word  = string , { string | non-space } ;
+               (* the value is the word with the outer quotes of each
+                  string removed; a quoted word is never a keyword or url *)
+string       = '"' , { any character but '"' } , '"'
+             | "'" , { any character but "'" } , "'" ;
+               (* opens only at the start of a word or right after another
+                  string; a quote without a matching one later on the line
+                  is a plain character *)</code></pre>
 <p>
   Attribute slots are matched greedily, left to right, each at most once. A word that doesn't fit the current
-  or a later slot starts the text, and the text runs to the end of the line.
+  or a later slot starts the text, and the text runs to the end of the line. Quoted words never fit a slot.
 </p>
 
 <h2 id="processing">Processing a line</h2>
 <ol>
-  <li><b>Strip the comment.</b> If the first non-blank character is <code>#</code>, the line is empty. Otherwise
-    everything from the first whitespace-then-<code>#</code> onward is removed.</li>
+  <li><b>Split into words.</b> Read the line left to right, recognizing strings, <code>-></code> and the comment.
+    If the first non-blank character is <code>#</code>, the line is empty. Otherwise everything from the first
+    whitespace-then-<code>#</code> outside a string onward is removed. Strings are found first, so
+    <code>-></code>, <code>#</code> and whitespace inside them are text.</li>
   <li><b>Skip blank lines.</b></li>
-  <li><b>Background.</b> If the trimmed line is exactly a color name, it becomes the background color, replacing any
-    earlier background.</li>
-  <li><b>Edge line.</b> If the line contains <code>-></code>:
+  <li><b>Background.</b> If the line is exactly one unquoted color name, it becomes the background color, replacing
+    any earlier background.</li>
+  <li><b>Edge line.</b> If the line contains <code>-></code> outside strings:
     <ol type="a">
-      <li>Split on <code>-></code>, trim each segment, and drop empty segments. Fewer than two remaining is a
+      <li>Split on <code>-></code> and drop segments without words. Fewer than two remaining is a
         <code>malformed edge line</code>.</li>
       <li>From each segment except the last, take the first word as an id. An invalid id is reported and left out of
         the chain.</li>
@@ -98,7 +112,8 @@ word         = non-space , { non-space } ;</code></pre>
   </li>
   <li><b>Node line.</b> Otherwise the first word is the id (an invalid id is reported and the line skipped). The
     remaining words are parsed as <code>node-attrs</code>. The node is created if needed, then each attribute that
-    was given replaces the node's current value. Text is replaced only when new text is given.</li>
+    was given replaces the node's current value. Text is replaced only when new text is given, and an empty string
+    (<code>""</code> or <code>''</code>) as the text clears it.</li>
 </ol>
 <p>
   Lines with errors are skipped as described, and processing continues. The diagram always shows everything that
@@ -133,9 +148,14 @@ word         = non-space , { non-space } ;</code></pre>
   <tr><th>Message</th><th>Cause</th><th></th></tr>
   <tr>
     <td><code>Line N: invalid node id "x"</code></td>
-    <td>The first word of a node line, or an id in an edge line, contains a character other than letters, digits,
-      <code>_</code>, <code>:</code> and <code>-</code>.</td>
+    <td>The first word of a node line, or an id in an edge line, is unquoted and contains a character other than
+      letters, digits, <code>_</code>, <code>:</code> and <code>-</code>.</td>
     <td><a class="try" href="../#h1=eyJzcmMiOiJvayAtPiBmaW5lXG5ub3Qub2sgc3F1YXJlXG4iLCJwb3MiOnt9fQ">try it</a></td>
+  </tr>
+  <tr>
+    <td><code>Line N: empty node id</code></td>
+    <td>An id is an empty string, <code>""</code> or <code>''</code>.</td>
+    <td><a class="try" href="../#h1=eyJzcmMiOiJhIC0-IGJcblwiXCIgc3F1YXJlXG4iLCJwb3MiOnt9fQ">try it</a></td>
   </tr>
   <tr>
     <td><code>Line N: malformed edge line</code></td>

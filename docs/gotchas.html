@@ -32,7 +32,8 @@
 <h1>Gotchas</h1>
 <p class="lead">
   modl's parser is deliberately simple, and a few of its rules produce surprising results. Each gotcha below has an
-  example you can open to see the behavior, plus a workaround.
+  example you can open to see the behavior, plus a workaround. Many of them are avoided by
+  <a href="structure.html#quotes">quoting</a> the label or id.
 </p>
 <ol class="toc">
   <li><a href="#arrow-in-text"><code>-></code> in a label makes an edge</a></li>
@@ -53,36 +54,41 @@
   <li><a href="#slash">A leading <code>/</code> means https</a></li>
   <li><a href="#rename">Renaming a node loses its position</a></li>
   <li><a href="#edge-ends">Edges run into wide nodes</a></li>
+  <li><a href="#quote-start">A quote at the start of a word opens a string</a></li>
 </ol>
 
 <h2 id="arrow-in-text">1. <code>-></code> in a label makes an edge</h2>
 <p>
-  Any line containing <code>-></code> is an edge line, even when the arrow is meant as text. Below, the first line was
-  meant to be a node labeled "Input -> Output". Instead it creates an edge from <code>step</code> to a new node
-  named <code>Output</code>, and "square Input" is silently dropped.
+  Any line containing <code>-></code> outside quotes is an edge line, even when the arrow is meant as text. Below,
+  the first line was meant to be a node labeled "Input -> Output". Instead it creates an edge from
+  <code>step</code> to a new node named <code>Output</code>, and "square Input" is silently dropped.
 </p>
 <figure class="example">
 <figcaption>Problem</figcaption><pre class="modl"><code><span class="m-id">step</span> <span class="m-ignored">square Input</span> <span class="m-arrow">-&gt;</span> <span class="m-id">Output</span></code></pre>
 <a class="open" href="../#h1=eyJzcmMiOiJzdGVwIHNxdWFyZSBJbnB1dCAtPiBPdXRwdXRcbiIsInBvcyI6e319">Open in editor</a>
 </figure>
-<p><b>Workaround:</b> use a Unicode arrow such as <code>→</code>, or words.</p>
+<p><b>Workaround:</b> quote the label, or use a Unicode arrow such as <code>→</code>.</p>
 <figure class="example">
-<figcaption>Fixed</figcaption><pre class="modl"><code><span class="m-id">step</span> <span class="m-shape">square</span> <span class="m-text">Input → Output</span></code></pre>
-<a class="open" href="../#h1=eyJzcmMiOiJzdGVwIHNxdWFyZSBJbnB1dCDihpIgT3V0cHV0XG4iLCJwb3MiOnt9fQ">Open in editor</a>
+<figcaption>Fixed</figcaption><pre class="modl"><code><span class="m-id">step1</span> <span class="m-shape">square</span> <span class="m-text">&quot;Input -&gt; Output&quot;</span>
+<span class="m-id">step2</span> <span class="m-shape">square</span> <span class="m-text">Input → Output</span></code></pre>
+<a class="open" href="../#h1=eyJzcmMiOiJzdGVwMSBzcXVhcmUgXCJJbnB1dCAtPiBPdXRwdXRcIlxuc3RlcDIgc3F1YXJlIElucHV0IOKGkiBPdXRwdXRcbiIsInBvcyI6e319">Open in editor</a>
 </figure>
 
 <h2 id="hash-in-text">2. Space before <code>#</code> starts a comment</h2>
-<p>Whitespace followed by <code>#</code> ends the line. The label below is only "Fix issue".</p>
+<p>Outside quotes, whitespace followed by <code>#</code> ends the line. The label below is only "Fix issue".</p>
 <figure class="example">
 <figcaption>Problem</figcaption><pre class="modl"><code><span class="m-id">bug</span> <span class="m-shape">square</span> <span class="m-color" style="--c:#ef4444">red</span> <span class="m-text">Fix issue</span> <span class="m-comment">#42</span></code></pre>
 <a class="open" href="../#h1=eyJzcmMiOiJidWcgc3F1YXJlIHJlZCBGaXggaXNzdWUgIzQyXG4iLCJwb3MiOnt9fQ">Open in editor</a>
 </figure>
-<p><b>Workaround:</b> keep the <code>#</code> attached to the previous word, or use another character such as <code>No.</code> or the full-width <code>＃</code>.</p>
+<p>
+  <b>Workaround:</b> quote the label or the word with the <code>#</code>, or keep the <code>#</code> attached to the
+  previous word.
+</p>
 <figure class="example">
-<figcaption>Fixed</figcaption><pre class="modl"><code><span class="m-id">bug1</span> <span class="m-shape">square</span> <span class="m-color" style="--c:#ef4444">red</span> <span class="m-text">Fix issue#42</span>
-<span class="m-id">bug2</span> <span class="m-shape">square</span> <span class="m-color" style="--c:#ef4444">red</span> <span class="m-text">Fix issue＃42</span>
-<span class="m-id">bug3</span> <span class="m-shape">square</span> <span class="m-color" style="--c:#ef4444">red</span> <span class="m-text">Fix issue No. 42</span></code></pre>
-<a class="open" href="../#h1=eyJzcmMiOiJidWcxIHNxdWFyZSByZWQgRml4IGlzc3VlIzQyXG5idWcyIHNxdWFyZSByZWQgRml4IGlzc3Vl77yDNDJcbmJ1ZzMgc3F1YXJlIHJlZCBGaXggaXNzdWUgTm8uIDQyXG4iLCJwb3MiOnt9fQ">Open in editor</a>
+<figcaption>Fixed</figcaption><pre class="modl"><code><span class="m-id">bug1</span> <span class="m-shape">square</span> <span class="m-color" style="--c:#ef4444">red</span> <span class="m-text">&quot;Fix issue #42&quot;</span>
+<span class="m-id">bug2</span> <span class="m-shape">square</span> <span class="m-color" style="--c:#ef4444">red</span> <span class="m-text">Fix issue &quot;#42&quot;</span>
+<span class="m-id">bug3</span> <span class="m-shape">square</span> <span class="m-color" style="--c:#ef4444">red</span> <span class="m-text">Fix issue#42</span></code></pre>
+<a class="open" href="../#h1=eyJzcmMiOiJidWcxIHNxdWFyZSByZWQgXCJGaXggaXNzdWUgIzQyXCJcbmJ1ZzIgc3F1YXJlIHJlZCBGaXggaXNzdWUgXCIjNDJcIlxuYnVnMyBzcXVhcmUgcmVkIEZpeCBpc3N1ZSM0MlxuIiwicG9zIjp7fX0">Open in editor</a>
 </figure>
 
 <h2 id="out-of-order">3. Out-of-order attributes become text</h2>
@@ -108,13 +114,14 @@
 <a class="open" href="../#h1=eyJzcmMiOiJhIGJpZyBkYXRhXG5iIHJlZCBhbGVydFxuIiwicG9zIjp7fX0">Open in editor</a>
 </figure>
 <p>
-  <b>Workaround:</b> fill a later slot, for example with the default color <code>gray</code>, or capitalize the word.
+  <b>Workaround:</b> quote the word, fill a later slot (for example with the default color <code>gray</code>), or
+  capitalize the word.
 </p>
 <figure class="example">
-<figcaption>Fixed</figcaption><pre class="modl"><code><span class="m-id">a</span> <span class="m-color" style="--c:#9aa4b2">gray</span> <span class="m-text">big data</span>
+<figcaption>Fixed</figcaption><pre class="modl"><code><span class="m-id">a</span> <span class="m-text">&quot;big data&quot;</span>
 <span class="m-id">b</span> <span class="m-color" style="--c:#9aa4b2">gray</span> <span class="m-text">red alert</span>
 <span class="m-id">c</span> <span class="m-text">Big Data</span></code></pre>
-<a class="open" href="../#h1=eyJzcmMiOiJhIGdyYXkgYmlnIGRhdGFcbmIgZ3JheSByZWQgYWxlcnRcbmMgQmlnIERhdGFcbiIsInBvcyI6e319">Open in editor</a>
+<a class="open" href="../#h1=eyJzcmMiOiJhIFwiYmlnIGRhdGFcIlxuYiBncmF5IHJlZCBhbGVydFxuYyBCaWcgRGF0YVxuIiwicG9zIjp7fX0">Open in editor</a>
 </figure>
 
 <h2 id="chain-words">5. Words in the middle of a chain are ignored</h2>
@@ -137,11 +144,11 @@
 <span class="m-id">red</span> <span class="m-arrow">-&gt;</span> <span class="m-id">green</span></code></pre>
 <a class="open" href="../#h1=eyJzcmMiOiJyZWRcbnJlZCAtPiBncmVlblxuIiwicG9zIjp7fX0">Open in editor</a>
 </figure>
-<p><b>Workaround:</b> give the node any attribute, or create it with an edge only.</p>
+<p><b>Workaround:</b> quote the id, give the node any attribute, or create it with an edge only.</p>
 <figure class="example">
-<figcaption>Fixed</figcaption><pre class="modl"><code><span class="m-id">red</span> <span class="m-color" style="--c:#ef4444">red</span>
+<figcaption>Fixed</figcaption><pre class="modl"><code><span class="m-id">&quot;red&quot;</span>
 <span class="m-id">red</span> <span class="m-arrow">-&gt;</span> <span class="m-id">green</span></code></pre>
-<a class="open" href="../#h1=eyJzcmMiOiJyZWQgcmVkXG5yZWQgLT4gZ3JlZW5cbiIsInBvcyI6e319">Open in editor</a>
+<a class="open" href="../#h1=eyJzcmMiOiJcInJlZFwiXG5yZWQgLT4gZ3JlZW5cbiIsInBvcyI6e319">Open in editor</a>
 </figure>
 
 <h2 id="case">7. Keywords are case-sensitive</h2>
@@ -157,27 +164,27 @@
 
 <h2 id="ids">8. Ids can't contain dots or spaces</h2>
 <p>
-  Ids allow only letters, digits, <code>_</code>, <code>:</code> and <code>-</code>. A line starting with something
-  like a domain name or version number is an error.
+  Unquoted ids allow only letters, digits, <code>_</code>, <code>:</code> and <code>-</code>. A line starting with
+  something like a domain name or version number is an error.
 </p>
 <figure class="example">
 <figcaption>Problem</figcaption><pre class="modl"><code><span class="m-bad">example.com</span> <span class="m-shape">square</span> <span class="m-color" style="--c:#3b82f6">blue</span>
 <span class="m-bad">v1.2</span> <span class="m-arrow">-&gt;</span> <span class="m-bad">v1.3</span></code></pre>
 <a class="open" href="../#h1=eyJzcmMiOiJleGFtcGxlLmNvbSBzcXVhcmUgYmx1ZVxudjEuMiAtPiB2MS4zXG4iLCJwb3MiOnt9fQ">Open in editor</a>
 </figure>
-<p><b>Workaround:</b> use a simple id and put the real name in the text.</p>
+<p><b>Workaround:</b> quote the id, or use a simple id and put the real name in the text.</p>
 <figure class="example">
-<figcaption>Fixed</figcaption><pre class="modl"><code><span class="m-id">site</span> <span class="m-shape">square</span> <span class="m-color" style="--c:#3b82f6">blue</span> <span class="m-text">example.com</span>
-<span class="m-id">v1_2</span> <span class="m-shape">hex</span> <span class="m-text">v1.2</span>
-<span class="m-id">v1_3</span> <span class="m-shape">hex</span> <span class="m-text">v1.3</span>
-<span class="m-id">v1_2</span> <span class="m-arrow">-&gt;</span> <span class="m-id">v1_3</span></code></pre>
-<a class="open" href="../#h1=eyJzcmMiOiJzaXRlIHNxdWFyZSBibHVlIGV4YW1wbGUuY29tXG52MV8yIGhleCB2MS4yXG52MV8zIGhleCB2MS4zXG52MV8yIC0-IHYxXzNcbiIsInBvcyI6e319">Open in editor</a>
+<figcaption>Fixed</figcaption><pre class="modl"><code><span class="m-id">&quot;example.com&quot;</span> <span class="m-shape">square</span> <span class="m-color" style="--c:#3b82f6">blue</span>
+<span class="m-id">&quot;v1.2&quot;</span> <span class="m-arrow">-&gt;</span> <span class="m-id">&quot;v1.3&quot;</span>
+<span class="m-id">site</span> <span class="m-shape">square</span> <span class="m-color" style="--c:#3b82f6">blue</span> <span class="m-text">example.com</span></code></pre>
+<a class="open" href="../#h1=eyJzcmMiOiJcImV4YW1wbGUuY29tXCIgc3F1YXJlIGJsdWVcblwidjEuMlwiIC0-IFwidjEuM1wiXG5zaXRlIHNxdWFyZSBibHVlIGV4YW1wbGUuY29tXG4iLCJwb3MiOnt9fQ">Open in editor</a>
 </figure>
 
 <h2 id="bad-middle">9. A bad id in a chain joins its neighbors</h2>
 <p>
   When an id in the middle of a chain is invalid, the editor reports an error but still draws the chain without that
-  node, connecting the ids on either side. An invalid <em>last</em> id discards the whole line instead.
+  node, connecting the ids on either side. An invalid <em>last</em> id discards the whole line instead. Quote the id
+  to keep it in the chain: <code>a -> "b.x" -> c</code>.
 </p>
 <figure class="example">
 <figcaption>Draws a -&gt; c, reports b.x</figcaption><pre class="modl"><code><span class="m-id">a</span> <span class="m-arrow">-&gt;</span> <span class="m-bad">b.x</span> <span class="m-arrow">-&gt;</span> <span class="m-id">c</span></code></pre>
@@ -199,15 +206,22 @@
 
 <h2 id="sticky">11. Attributes can't be removed by redefining</h2>
 <p>
-  A later node line only overrides the attributes it gives. A bare id doesn't reset anything, and text can't be cleared
-  at all except by deleting the line that set it.
+  A later node line only overrides the attributes it gives. A bare id doesn't reset anything.
 </p>
 <figure class="example">
 <figcaption>Still big, red and labeled</figcaption><pre class="modl"><code><span class="m-id">n</span> <span class="m-size">big</span> <span class="m-shape">square</span> <span class="m-color" style="--c:#ef4444">red</span> <span class="m-text">Label</span>
 <span class="m-id">n</span></code></pre>
 <a class="open" href="../#h1=eyJzcmMiOiJuIGJpZyBzcXVhcmUgcmVkIExhYmVsXG5uXG4iLCJwb3MiOnt9fQ">Open in editor</a>
 </figure>
-<p><b>Workaround:</b> set attributes back explicitly (<code>normal</code>, <code>circle</code>, <code>gray</code>) or delete the earlier line.</p>
+<p>
+  <b>Workaround:</b> set attributes back explicitly (<code>normal</code>, <code>circle</code>, <code>gray</code>,
+  and <code>""</code> for the text) or delete the earlier line.
+</p>
+<figure class="example">
+<figcaption>Fixed</figcaption><pre class="modl"><code><span class="m-id">n</span> <span class="m-size">big</span> <span class="m-shape">square</span> <span class="m-color" style="--c:#ef4444">red</span> <span class="m-text">Label</span>
+<span class="m-id">n</span> <span class="m-size">normal</span> <span class="m-shape">circle</span> <span class="m-color" style="--c:#9aa4b2">gray</span> <span class="m-text">&quot;&quot;</span></code></pre>
+<a class="open" href="../#h1=eyJzcmMiOiJuIGJpZyBzcXVhcmUgcmVkIExhYmVsXG5uIG5vcm1hbCBjaXJjbGUgZ3JheSBcIlwiXG4iLCJwb3MiOnt9fQ">Open in editor</a>
+</figure>
 
 <h2 id="edge-size">12. Edge size doesn't thicken lines</h2>
 <p>On edges, size only scales the label. For a thicker line use <code>bold</code>.</p>
@@ -271,7 +285,8 @@
 <h2 id="slash">16. A leading <code>/</code> means https</h2>
 <p>
   <code>/example.com/page</code> is shorthand for <code>https://example.com/page</code>, not a path on the current
-  site. There is no relative-link form. A URL can't contain spaces, since the first space ends it.
+  site. There is no relative-link form. A URL can't contain spaces, since the first space ends it. Quoting doesn't
+  help, because a quoted word is always text; write spaces as <code>%20</code>.
 </p>
 <figure class="example">
 <figcaption>These go to https://docs/... and https://my</figcaption><pre class="modl"><code><span class="m-id">a</span> <span class="m-url">/docs/intro.html</span> <span class="m-text">Not a relative link</span>
@@ -305,6 +320,28 @@
 <span class="m-id">b</span> <span class="m-size">big</span> <span class="m-shape">square</span> <span class="m-color" style="--c:#a855f7">purple</span> <span class="m-text">Target system</span>
 <span class="m-id">a</span> <span class="m-arrow">-&gt;</span> <span class="m-id">b</span></code></pre>
 <a class="open" href="../#h1=eyJzcmMiOiJhIGJpZyBzcXVhcmUgYmx1ZSBTb3VyY2Ugc3lzdGVtXG5iIGJpZyBzcXVhcmUgcHVycGxlIFRhcmdldCBzeXN0ZW1cbmEgLT4gYlxuIiwicG9zIjp7ImEiOlszMDAsMTEwXSwiYiI6WzMwMCwzODBdfX0">Open in editor</a>
+</figure>
+
+<h2 id="quote-start">19. A quote at the start of a word opens a string</h2>
+<p>
+  A <code>"</code> or <code>'</code> at the start of a word opens a <a href="structure.html#quotes">string</a> if
+  the same quote appears anywhere later on the line, even in the middle of another word or in what would otherwise
+  be a comment. Below, the leading
+  apostrophes of <code>'tis</code> and <code>'twas</code> pair up and disappear. In the second line, the single-quoted
+  string ends at the apostrophe in <code>Bob's</code>.
+</p>
+<figure class="example">
+<figcaption>Problem</figcaption><pre class="modl"><code><span class="m-id">a</span> <span class="m-text">'tis and 'twas</span>
+<span class="m-id">b</span> <span class="m-text">'Bob's car'</span></code></pre>
+<a class="open" href="../#h1=eyJzcmMiOiJhICd0aXMgYW5kICd0d2FzXG5iICdCb2IncyBjYXInXG4iLCJwb3MiOnsiYSI6WzE2MCwyMDBdLCJiIjpbNDYwLDIwMF19fQ">Open in editor</a>
+</figure>
+<p>
+  <b>Workaround:</b> put text with apostrophes in double quotes, and text with double quotes in single quotes.
+</p>
+<figure class="example">
+<figcaption>Fixed</figcaption><pre class="modl"><code><span class="m-id">a</span> <span class="m-text">&quot;'tis and 'twas&quot;</span>
+<span class="m-id">b</span> <span class="m-text">&quot;Bob's car&quot;</span></code></pre>
+<a class="open" href="../#h1=eyJzcmMiOiJhIFwiJ3RpcyBhbmQgJ3R3YXNcIlxuYiBcIkJvYidzIGNhclwiXG4iLCJwb3MiOnsiYSI6WzE2MCwyMDBdLCJiIjpbNDYwLDIwMF19fQ">Open in editor</a>
 </figure>
     <nav class="pager">
       <a class="prev" href="sharing.html">← Sharing &amp; positions</a>

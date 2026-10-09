@@ -39,8 +39,8 @@
 <p>After its comment is removed, each line is classified by the first rule that matches:</p>
 <ol>
   <li><b>Blank</b>: nothing left but whitespace, so the line is ignored.</li>
-  <li><b>Background</b>: the whole line is exactly one <a href="styles.html#colors">color name</a>, which sets the background color.</li>
-  <li><b>Edge</b>: the line contains <code>-></code> anywhere, so it declares one or more <a href="edges.html">edges</a>.</li>
+  <li><b>Background</b>: the whole line is exactly one unquoted <a href="styles.html#colors">color name</a>, which sets the background color.</li>
+  <li><b>Edge</b>: the line contains <code>-></code> anywhere outside <a href="#quotes">quotes</a>, so it declares one or more <a href="edges.html">edges</a>.</li>
   <li><b>Node</b>: anything else declares or updates a <a href="nodes.html">node</a>.</li>
 </ol>
 <figure class="example">
@@ -54,8 +54,9 @@
 
 <div class="warn">
   <p>
-    Because rule 3 only looks for <code>-></code> somewhere in the line, a node label that contains
-    <code>-></code> turns the line into an edge line. See <a href="gotchas.html#arrow-in-text">Gotchas</a>.
+    Because rule 3 only looks for <code>-></code> somewhere in the line, an unquoted node label that contains
+    <code>-></code> turns the line into an edge line. Put such a label in <a href="#quotes">quotes</a>. See
+    <a href="gotchas.html#arrow-in-text">Gotchas</a>.
   </p>
 </div>
 
@@ -65,21 +66,69 @@
   <li>It is the first non-blank character of the line, so the whole line is a comment, even when indented.</li>
   <li>It follows whitespace (a space or tab), so the rest of the line is a comment.</li>
 </ul>
-<p>A <code>#</code> directly after another character is ordinary text. That keeps URL fragments and names like <code>C#</code> intact.</p>
+<p>
+  A <code>#</code> directly after another character is ordinary text. That keeps URL fragments and names like
+  <code>C#</code> intact. A <code>#</code> inside <a href="#quotes">quotes</a> is always text.
+</p>
 <figure class="example">
 <figcaption>Comment rules</figcaption><pre class="modl"><code><span class="m-comment"># whole-line comment</span>
-<span class="m-comment">    # indented whole-line comment</span>
+    <span class="m-comment"># indented whole-line comment</span>
 <span class="m-id">a</span> <span class="m-shape">square</span> <span class="m-text">Server A</span>        <span class="m-comment"># trailing comment</span>
 <span class="m-id">lang</span> <span class="m-shape">square</span> <span class="m-text">C# and F#</span>    <span class="m-comment"># the # in C# and F# is text; this one starts a comment</span>
-<span class="m-id">docs</span> <span class="m-url">/example.com/page#section</span> <span class="m-text">Fragment links survive</span></code></pre>
-<a class="open" href="../#h1=eyJzcmMiOiIjIHdob2xlLWxpbmUgY29tbWVudFxuICAgICMgaW5kZW50ZWQgd2hvbGUtbGluZSBjb21tZW50XG5hIHNxdWFyZSBTZXJ2ZXIgQSAgICAgICAgIyB0cmFpbGluZyBjb21tZW50XG5sYW5nIHNxdWFyZSBDIyBhbmQgRiMgICAgIyB0aGUgIyBpbiBDIyBhbmQgRiMgaXMgdGV4dDsgdGhpcyBvbmUgc3RhcnRzIGEgY29tbWVudFxuZG9jcyAvZXhhbXBsZS5jb20vcGFnZSNzZWN0aW9uIEZyYWdtZW50IGxpbmtzIHN1cnZpdmVcbiIsInBvcyI6e319">Open in editor</a>
+<span class="m-id">docs</span> <span class="m-url">/example.com/page#section</span> <span class="m-text">Fragment links survive</span>
+<span class="m-id">bug</span> <span class="m-shape">square</span> <span class="m-text">&quot;Fix issue #42&quot;</span>   <span class="m-comment"># quoted, so the first # is text</span></code></pre>
+<a class="open" href="../#h1=eyJzcmMiOiIjIHdob2xlLWxpbmUgY29tbWVudFxuICAgICMgaW5kZW50ZWQgd2hvbGUtbGluZSBjb21tZW50XG5hIHNxdWFyZSBTZXJ2ZXIgQSAgICAgICAgIyB0cmFpbGluZyBjb21tZW50XG5sYW5nIHNxdWFyZSBDIyBhbmQgRiMgICAgIyB0aGUgIyBpbiBDIyBhbmQgRiMgaXMgdGV4dDsgdGhpcyBvbmUgc3RhcnRzIGEgY29tbWVudFxuZG9jcyAvZXhhbXBsZS5jb20vcGFnZSNzZWN0aW9uIEZyYWdtZW50IGxpbmtzIHN1cnZpdmVcbmJ1ZyBzcXVhcmUgXCJGaXggaXNzdWUgIzQyXCIgICAjIHF1b3RlZCwgc28gdGhlIGZpcnN0ICMgaXMgdGV4dFxuIiwicG9zIjp7fX0">Open in editor</a>
+</figure>
+
+<h2 id="quotes">Quoted strings</h2>
+<p>
+  A word can be wrapped in double quotes <code>"…"</code> or single quotes <code>'…'</code>. Everything between the
+  quotes is one word, taken literally: spaces, <code>-></code> and <code>#</code> are just characters, and the word is
+  never read as a size, shape, color or URL. The quotes themselves aren't part of the word.
+</p>
+<figure class="example">
+<figcaption>Quoted text</figcaption><pre class="modl"><code><span class="m-id">a</span> <span class="m-shape">square</span> <span class="m-text">&quot;Input -&gt; Output&quot;</span>      <span class="m-comment"># an arrow in a label</span>
+<span class="m-id">b</span> <span class="m-shape">square</span> <span class="m-color" style="--c:#ef4444">red</span> <span class="m-text">&quot;Issue #42&quot;</span>        <span class="m-comment"># a # in a label</span>
+<span class="m-id">c</span> <span class="m-text">&quot;big&quot; data</span>                    <span class="m-comment"># a label starting with a reserved word</span>
+<span class="m-id">d</span> <span class="m-text">&quot;red&quot;</span>                         <span class="m-comment"># a gray node labeled red</span></code></pre>
+<a class="open" href="../#h1=eyJzcmMiOiJhIHNxdWFyZSBcIklucHV0IC0-IE91dHB1dFwiICAgICAgIyBhbiBhcnJvdyBpbiBhIGxhYmVsXG5iIHNxdWFyZSByZWQgXCJJc3N1ZSAjNDJcIiAgICAgICAgIyBhICMgaW4gYSBsYWJlbFxuYyBcImJpZ1wiIGRhdGEgICAgICAgICAgICAgICAgICAgICMgYSBsYWJlbCBzdGFydGluZyB3aXRoIGEgcmVzZXJ2ZWQgd29yZFxuZCBcInJlZFwiICAgICAgICAgICAgICAgICAgICAgICAgICMgYSBncmF5IG5vZGUgbGFiZWxlZCByZWRcbiIsInBvcyI6eyJhIjpbMTQwLDEwMF0sImIiOls0NDAsMTAwXSwiYyI6WzE0MCwzMDBdLCJkIjpbNDQwLDMwMF19fQ">Open in editor</a>
+</figure>
+<p>
+  Ids can be quoted too, which lets them contain any characters. <code>"a"</code> and <code>a</code> are the same
+  node.
+</p>
+<figure class="example">
+<figcaption>Quoted ids</figcaption><pre class="modl"><code><span class="m-id">&quot;example.com&quot;</span> <span class="m-shape">square</span> <span class="m-color" style="--c:#3b82f6">blue</span>
+<span class="m-id">&quot;v1.2&quot;</span> <span class="m-arrow">-&gt;</span> <span class="m-id">&quot;v1.3&quot;</span> <span class="m-text">upgrade</span>
+<span class="m-id">&quot;example.com&quot;</span> <span class="m-arrow">-&gt;</span> <span class="m-id">&quot;v1.2&quot;</span></code></pre>
+<a class="open" href="../#h1=eyJzcmMiOiJcImV4YW1wbGUuY29tXCIgc3F1YXJlIGJsdWVcblwidjEuMlwiIC0-IFwidjEuM1wiIHVwZ3JhZGVcblwiZXhhbXBsZS5jb21cIiAtPiBcInYxLjJcIlxuIiwicG9zIjp7ImV4YW1wbGUuY29tIjpbMTQwLDIwMF0sInYxLjIiOls0MDAsMTIwXSwidjEuMyI6WzQwMCwyODBdfX0">Open in editor</a>
+</figure>
+<p>The rules for quotes:</p>
+<ul>
+  <li>A string is closed by the next quote of the same kind, so double quotes can hold single quotes and single
+    quotes can hold double quotes. There are no escape characters.</li>
+  <li>A quote opens a string only at the start of a word, so apostrophes inside words, as in
+    <code>Bob's</code> or <code>don't</code>, are ordinary characters.</li>
+  <li>A quote with no matching quote later on the line is an ordinary character too.</li>
+  <li>A quoted string and the characters or strings directly next to it, with no space between, form one word. To
+    use both kinds of quote in one label, write two strings side by side: <code>"it's "'"fine"'</code> is the word
+    <code>it's "fine"</code>.</li>
+  <li>An empty string, <code>""</code> or <code>''</code>, is an empty word. As text it clears a node's label
+    (see <a href="nodes.html#redefining">Redefining nodes</a>). As an id it is an error.</li>
+</ul>
+<figure class="example">
+<figcaption>Mixing quotes</figcaption><pre class="modl"><code><span class="m-id">a</span> <span class="m-text">&quot;Bob's car&quot;</span>
+<span class="m-id">b</span> <span class="m-text">'She said &quot;hi&quot;'</span>
+<span class="m-id">c</span> <span class="m-text">Bob's car</span>                     <span class="m-comment"># mid-word apostrophe: plain text</span>
+<span class="m-id">d</span> <span class="m-text">&quot;it's &quot;'&quot;fine&quot;'</span></code></pre>
+<a class="open" href="../#h1=eyJzcmMiOiJhIFwiQm9iJ3MgY2FyXCJcbmIgJ1NoZSBzYWlkIFwiaGlcIidcbmMgQm9iJ3MgY2FyICAgICAgICAgICAgICAgICAgICAgIyBtaWQtd29yZCBhcG9zdHJvcGhlOiBwbGFpbiB0ZXh0XG5kIFwiaXQncyBcIidcImZpbmVcIidcbiIsInBvcyI6eyJhIjpbMTQwLDEyMF0sImIiOls0NjAsMTIwXSwiYyI6WzE0MCwzMDBdLCJkIjpbNDYwLDMwMF19fQ">Open in editor</a>
 </figure>
 
 <h2 id="whitespace">Whitespace</h2>
 <ul>
   <li>Words are separated by any run of spaces or tabs. Indentation and alignment don't matter.</li>
   <li>Spaces around <code>-></code> are optional: <code>a->b</code> and <code>a  ->  b</code> are the same.</li>
-  <li>Runs of whitespace inside label text collapse to a single space.</li>
+  <li>Runs of whitespace between words of label text collapse to a single space. Whitespace inside quotes is kept.</li>
   <li>Blank lines are ignored. Both <code>\n</code> and <code>\r\n</code> line endings work.</li>
 </ul>
 <figure class="example">

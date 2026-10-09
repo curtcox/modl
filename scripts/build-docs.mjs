@@ -71,7 +71,7 @@ function parsePos(spec) {
   const pos = {};
   if (!spec) return pos;
   for (const entry of spec.trim().split(/\s+/)) {
-    const m = /^([A-Za-z0-9_:\-]+):(-?\d+),(-?\d+)$/.exec(entry);
+    const m = /^(\S+):(-?\d+),(-?\d+)$/.exec(entry);
     if (!m) throw new Error(`bad pos entry "${entry}"`);
     pos[m[1]] = [Number(m[2]), Number(m[3])];
   }
@@ -104,91 +104,107 @@ function colorSpan(cls, name) {
   return span(cls, name, `--c:${COLORS[name]}`);
 }
 
-// Splits into alternating whitespace / token pieces, keeping everything
-function pieces(s) {
-  return s.split(/(\s+)/).filter((p) => p !== "");
+// Must match lexLine in index.html
+function lexLine(line) {
+  const pieces = [];
+  const isWS = (c) => /\s/.test(c);
+  let i = 0;
+  while (i < line.length) {
+    const c = line[i];
+    if (isWS(c)) {
+      let j = i;
+      while (j < line.length && isWS(line[j])) j++;
+      pieces.push({ type: "ws", raw: line.slice(i, j) });
+      i = j;
+    } else if (c === "#" && (i === 0 || isWS(line[i - 1]))) {
+      pieces.push({ type: "comment", raw: line.slice(i) });
+      break;
+    } else if (line.startsWith("->", i)) {
+      pieces.push({ type: "arrow", raw: "->" });
+      i += 2;
+    } else {
+      const start = i;
+      let value = "";
+      let quoted = false;
+      let canOpen = true;
+      while (i < line.length && !isWS(line[i]) && !line.startsWith("->", i)) {
+        const q = line[i];
+        const close = (canOpen && (q === '"' || q === "'")) ? line.indexOf(q, i + 1) : -1;
+        if (close >= 0) {
+          value += line.slice(i + 1, close);
+          quoted = true;
+          i = close + 1;
+        } else {
+          value += q;
+          canOpen = false;
+          i++;
+        }
+      }
+      pieces.push({ type: "word", raw: line.slice(start, i), value, quoted });
+    }
+  }
+  return pieces;
 }
 
-function highlightAttrs(text, kind) {
+// Wraps the pieces from the first word to the last word in one span, leaving surrounding whitespace outside
+function spanWords(cls, ps) {
+  const first = ps.findIndex((p) => p.type === "word");
+  if (first < 0) return ps.map((p) => p.raw).join("");
+  const last = ps.findLastIndex((p) => p.type === "word");
+  const raw = (a, b) => ps.slice(a, b).map((p) => p.raw).join("");
+  return raw(0, first) + span(cls, raw(first, last + 1)) + raw(last + 1);
+}
+
+function highlightAttrs(ps, kind) {
   let out = "";
-  let slot = 0; // 0 size, 1 style, 2 color, 3 url, 4 text
-  let inText = false;
-  let textBuf = "";
-  for (const p of pieces(text)) {
-    if (/^\s+$/.test(p)) {
-      if (inText) textBuf += p;
-      else out += p;
-      continue;
-    }
-    if (!inText) {
-      if (slot <= 0 && NODE_SIZES.includes(p)) { out += span("m-size", p); slot = 1; continue; }
-      const styles = kind === "node" ? NODE_SHAPES : EDGE_STYLES;
-      if (slot <= 1 && styles.includes(p)) { out += span(kind === "node" ? "m-shape" : "m-line", p); slot = 2; continue; }
-      if (slot <= 2 && isColor(p)) { out += colorSpan("m-color", p); slot = 3; continue; }
-      if (slot <= 3 && looksLikeUrl(p)) { out += span("m-url", p); slot = 4; continue; }
-      inText = true;
-    }
-    textBuf += p;
+  let slot = 0; // 0 size, 1 style, 2 color, 3 url
+  for (let i = 0; i < ps.length; i++) {
+    const p = ps[i];
+    if (p.type === "ws") { out += p.raw; continue; }
+    const v = p.quoted ? null : p.value;
+    const styles = kind === "node" ? NODE_SHAPES : EDGE_STYLES;
+    if (v !== null && slot <= 0 && NODE_SIZES.includes(v)) { out += span("m-size", v); slot = 1; continue; }
+    if (v !== null && slot <= 1 && styles.includes(v)) { out += span(kind === "node" ? "m-shape" : "m-line", v); slot = 2; continue; }
+    if (v !== null && slot <= 2 && isColor(v)) { out += colorSpan("m-color", v); slot = 3; continue; }
+    if (v !== null && slot <= 3 && looksLikeUrl(v)) { out += span("m-url", v); slot = 4; continue; }
+    return out + spanWords("m-text", ps.slice(i));
   }
-  const trailing = /\s+$/.exec(textBuf)?.[0] || "";
-  return out + span("m-text", textBuf.slice(0, textBuf.length - trailing.length)) + trailing;
+  return out;
 }
 
-function highlightId(tok) {
-  return isValidId(tok) ? span("m-id", tok) : span("m-bad", tok);
+function highlightId(word) {
+  const ok = word.quoted ? word.value !== "" : isValidId(word.value);
+  return span(ok ? "m-id" : "m-bad", word.raw);
 }
 
-function highlightCode(code) {
-  if (!code.trim()) return code;
-  if (isColor(code.trim())) {
-    const lead = /^\s*/.exec(code)[0];
-    const name = code.trim();
-    return lead + colorSpan("m-bg", name) + code.slice(lead.length + name.length);
-  }
-  if (code.includes("->")) {
-    const parts = code.split("->");
-    // Empty segments are skipped, so attributes belong to the last non-empty one
-    const lastIdx = parts.findLastIndex((seg) => seg.trim());
-    let out = "";
-    parts.forEach((seg, i) => {
-      if (i > 0) out += span("m-arrow", "->");
-      const ps = pieces(seg);
-      let seenId = false;
-      let rest = "";
-      let idx = 0;
-      for (; idx < ps.length; idx++) {
-        const p = ps[idx];
-        if (/^\s+$/.test(p)) { out += p; continue; }
-        out += highlightId(p);
-        seenId = true;
-        idx++;
-        break;
-      }
-      rest = ps.slice(idx).join("");
-      if (!seenId) return;
-      if (i === lastIdx) out += highlightAttrs(rest, "edge");
-      else {
-        const lead = /^\s*/.exec(rest)[0];
-        const trail = /\s*$/.exec(rest.slice(lead.length))[0];
-        out += lead + span("m-ignored", rest.slice(lead.length, rest.length - trail.length)) + trail;
-      }
-    });
-    return out;
-  }
-  const lead = /^\s*/.exec(code)[0];
-  const body = code.slice(lead.length);
-  const m = /^(\S+)([\s\S]*)$/.exec(body);
-  return lead + highlightId(m[1]) + highlightAttrs(m[2], "node");
+// Highlights the whitespace and words of a node line or edge segment. mode is "node", "edge" or "ignored".
+function highlightStatement(ps, mode) {
+  const idIdx = ps.findIndex((p) => p.type === "word");
+  if (idIdx < 0) return ps.map((p) => p.raw).join("");
+  const lead = ps.slice(0, idIdx).map((p) => p.raw).join("");
+  const rest = ps.slice(idIdx + 1);
+  return lead + highlightId(ps[idIdx]) + (mode === "ignored" ? spanWords("m-ignored", rest) : highlightAttrs(rest, mode));
 }
 
 function highlightLine(raw) {
-  if (raw.trim().startsWith("#")) return span("m-comment", raw);
-  const idx = raw.search(/\s#/);
-  if (idx >= 0) {
-    const ws = /^\s+/.exec(raw.slice(idx))[0];
-    return highlightCode(raw.slice(0, idx)) + ws + span("m-comment", raw.slice(idx + ws.length));
+  const ps = lexLine(raw);
+  const comment = ps.at(-1)?.type === "comment" ? span("m-comment", ps.pop().raw) : "";
+  const words = ps.filter((p) => p.type === "word");
+  if (!ps.some((p) => p.type === "arrow")) {
+    if (words.length === 1 && !words[0].quoted && isColor(words[0].value)) {
+      return ps.map((p) => (p.type === "word" ? colorSpan("m-bg", p.value) : p.raw)).join("") + comment;
+    }
+    return highlightStatement(ps, "node") + comment;
   }
-  return highlightCode(raw);
+  const segs = [[]];
+  for (const p of ps) {
+    if (p.type === "arrow") segs.push([]);
+    else segs.at(-1).push(p);
+  }
+  // Empty segments are skipped, so attributes belong to the last non-empty one
+  const lastIdx = segs.findLastIndex((seg) => seg.some((p) => p.type === "word"));
+  return segs.map((seg, i) => highlightStatement(seg, i === lastIdx ? "edge" : "ignored"))
+    .join(span("m-arrow", "->")) + comment;
 }
 
 function highlight(src) {

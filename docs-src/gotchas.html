@@ -1,7 +1,8 @@
 <h1>Gotchas</h1>
 <p class="lead">
   modl's parser is deliberately simple, and a few of its rules produce surprising results. Each gotcha below has an
-  example you can open to see the behavior, plus a workaround.
+  example you can open to see the behavior, plus a workaround. Many of them are avoided by
+  <a href="structure.html#quotes">quoting</a> the label or id.
 </p>
 <ol class="toc">
   <li><a href="#arrow-in-text"><code>-></code> in a label makes an edge</a></li>
@@ -22,32 +23,37 @@
   <li><a href="#slash">A leading <code>/</code> means https</a></li>
   <li><a href="#rename">Renaming a node loses its position</a></li>
   <li><a href="#edge-ends">Edges run into wide nodes</a></li>
+  <li><a href="#quote-start">A quote at the start of a word opens a string</a></li>
 </ol>
 
 <h2 id="arrow-in-text">1. <code>-></code> in a label makes an edge</h2>
 <p>
-  Any line containing <code>-></code> is an edge line, even when the arrow is meant as text. Below, the first line was
-  meant to be a node labeled "Input -> Output". Instead it creates an edge from <code>step</code> to a new node
-  named <code>Output</code>, and "square Input" is silently dropped.
+  Any line containing <code>-></code> outside quotes is an edge line, even when the arrow is meant as text. Below,
+  the first line was meant to be a node labeled "Input -> Output". Instead it creates an edge from
+  <code>step</code> to a new node named <code>Output</code>, and "square Input" is silently dropped.
 </p>
 <modl-example title="Problem">
 step square Input -> Output
 </modl-example>
-<p><b>Workaround:</b> use a Unicode arrow such as <code>→</code>, or words.</p>
+<p><b>Workaround:</b> quote the label, or use a Unicode arrow such as <code>→</code>.</p>
 <modl-example title="Fixed">
-step square Input → Output
+step1 square "Input -> Output"
+step2 square Input → Output
 </modl-example>
 
 <h2 id="hash-in-text">2. Space before <code>#</code> starts a comment</h2>
-<p>Whitespace followed by <code>#</code> ends the line. The label below is only "Fix issue".</p>
+<p>Outside quotes, whitespace followed by <code>#</code> ends the line. The label below is only "Fix issue".</p>
 <modl-example title="Problem">
 bug square red Fix issue #42
 </modl-example>
-<p><b>Workaround:</b> keep the <code>#</code> attached to the previous word, or use another character such as <code>No.</code> or the full-width <code>＃</code>.</p>
+<p>
+  <b>Workaround:</b> quote the label or the word with the <code>#</code>, or keep the <code>#</code> attached to the
+  previous word.
+</p>
 <modl-example title="Fixed">
-bug1 square red Fix issue#42
-bug2 square red Fix issue＃42
-bug3 square red Fix issue No. 42
+bug1 square red "Fix issue #42"
+bug2 square red Fix issue "#42"
+bug3 square red Fix issue#42
 </modl-example>
 
 <h2 id="out-of-order">3. Out-of-order attributes become text</h2>
@@ -70,10 +76,11 @@ a big data
 b red alert
 </modl-example>
 <p>
-  <b>Workaround:</b> fill a later slot, for example with the default color <code>gray</code>, or capitalize the word.
+  <b>Workaround:</b> quote the word, fill a later slot (for example with the default color <code>gray</code>), or
+  capitalize the word.
 </p>
 <modl-example title="Fixed">
-a gray big data
+a "big data"
 b gray red alert
 c Big Data
 </modl-example>
@@ -95,9 +102,9 @@ b -> c dashed
 red
 red -> green
 </modl-example>
-<p><b>Workaround:</b> give the node any attribute, or create it with an edge only.</p>
+<p><b>Workaround:</b> quote the id, give the node any attribute, or create it with an edge only.</p>
 <modl-example title="Fixed">
-red red
+"red"
 red -> green
 </modl-example>
 
@@ -112,25 +119,25 @@ a big square red
 
 <h2 id="ids">8. Ids can't contain dots or spaces</h2>
 <p>
-  Ids allow only letters, digits, <code>_</code>, <code>:</code> and <code>-</code>. A line starting with something
-  like a domain name or version number is an error.
+  Unquoted ids allow only letters, digits, <code>_</code>, <code>:</code> and <code>-</code>. A line starting with
+  something like a domain name or version number is an error.
 </p>
 <modl-example title="Problem">
 example.com square blue
 v1.2 -> v1.3
 </modl-example>
-<p><b>Workaround:</b> use a simple id and put the real name in the text.</p>
+<p><b>Workaround:</b> quote the id, or use a simple id and put the real name in the text.</p>
 <modl-example title="Fixed">
+"example.com" square blue
+"v1.2" -> "v1.3"
 site square blue example.com
-v1_2 hex v1.2
-v1_3 hex v1.3
-v1_2 -> v1_3
 </modl-example>
 
 <h2 id="bad-middle">9. A bad id in a chain joins its neighbors</h2>
 <p>
   When an id in the middle of a chain is invalid, the editor reports an error but still draws the chain without that
-  node, connecting the ids on either side. An invalid <em>last</em> id discards the whole line instead.
+  node, connecting the ids on either side. An invalid <em>last</em> id discards the whole line instead. Quote the id
+  to keep it in the chain: <code>a -> "b.x" -> c</code>.
 </p>
 <modl-example title="Draws a -> c, reports b.x">
 a -> b.x -> c
@@ -150,14 +157,20 @@ d -> -> e
 
 <h2 id="sticky">11. Attributes can't be removed by redefining</h2>
 <p>
-  A later node line only overrides the attributes it gives. A bare id doesn't reset anything, and text can't be cleared
-  at all except by deleting the line that set it.
+  A later node line only overrides the attributes it gives. A bare id doesn't reset anything.
 </p>
 <modl-example title="Still big, red and labeled">
 n big square red Label
 n
 </modl-example>
-<p><b>Workaround:</b> set attributes back explicitly (<code>normal</code>, <code>circle</code>, <code>gray</code>) or delete the earlier line.</p>
+<p>
+  <b>Workaround:</b> set attributes back explicitly (<code>normal</code>, <code>circle</code>, <code>gray</code>,
+  and <code>""</code> for the text) or delete the earlier line.
+</p>
+<modl-example title="Fixed">
+n big square red Label
+n normal circle gray ""
+</modl-example>
 
 <h2 id="edge-size">12. Edge size doesn't thicken lines</h2>
 <p>On edges, size only scales the label. For a thicker line use <code>bold</code>.</p>
@@ -215,7 +228,8 @@ a -> b
 <h2 id="slash">16. A leading <code>/</code> means https</h2>
 <p>
   <code>/example.com/page</code> is shorthand for <code>https://example.com/page</code>, not a path on the current
-  site. There is no relative-link form. A URL can't contain spaces, since the first space ends it.
+  site. There is no relative-link form. A URL can't contain spaces, since the first space ends it. Quoting doesn't
+  help, because a quoted word is always text; write spaces as <code>%20</code>.
 </p>
 <modl-example title="These go to https://docs/... and https://my">
 a /docs/intro.html Not a relative link
@@ -246,4 +260,24 @@ a -> b
 a big square blue Source system
 b big square purple Target system
 a -> b
+</modl-example>
+
+<h2 id="quote-start">19. A quote at the start of a word opens a string</h2>
+<p>
+  A <code>"</code> or <code>'</code> at the start of a word opens a <a href="structure.html#quotes">string</a> if
+  the same quote appears anywhere later on the line, even in the middle of another word or in what would otherwise
+  be a comment. Below, the leading
+  apostrophes of <code>'tis</code> and <code>'twas</code> pair up and disappear. In the second line, the single-quoted
+  string ends at the apostrophe in <code>Bob's</code>.
+</p>
+<modl-example title="Problem" pos="a:160,200 b:460,200">
+a 'tis and 'twas
+b 'Bob's car'
+</modl-example>
+<p>
+  <b>Workaround:</b> put text with apostrophes in double quotes, and text with double quotes in single quotes.
+</p>
+<modl-example title="Fixed" pos="a:160,200 b:460,200">
+a "'tis and 'twas"
+b "Bob's car"
 </modl-example>

@@ -18,14 +18,16 @@ everything big hex red /example.com This is the label
 
 <h2 id="ids">Ids</h2>
 <p>
-  The id is the first word on the line. It names the node, and edges refer to nodes by id. An id may contain only
-  ASCII letters, digits, underscore <code>_</code>, colon <code>:</code> and hyphen <code>-</code>.
+  The id is the first word on the line. It names the node, and edges refer to nodes by id. An unquoted id may
+  contain only ASCII letters, digits, underscore <code>_</code>, colon <code>:</code> and hyphen <code>-</code>. A
+  <a href="structure.html#quotes">quoted</a> id may contain anything, including spaces, but can't be empty.
 </p>
 <table>
   <tr><th>Valid ids</th><th>Invalid ids</th></tr>
   <tr>
-    <td><code>a</code> <code>Web</code> <code>web-server</code> <code>db_1</code> <code>ns:item</code> <code>42</code> <code>A:b_c-d</code></td>
-    <td><code>example.com</code> <code>v1.2</code> <code>x/y</code> <code>café</code> <code>"quoted"</code> <code>a+b</code> <code>(x)</code></td>
+    <td><code>a</code> <code>Web</code> <code>web-server</code> <code>db_1</code> <code>ns:item</code> <code>42</code> <code>A:b_c-d</code>
+      <code>"example.com"</code> <code>'v1.2'</code> <code>"my node"</code></td>
+    <td><code>example.com</code> <code>v1.2</code> <code>x/y</code> <code>café</code> <code>a+b</code> <code>(x)</code> <code>""</code></td>
   </tr>
 </table>
 <modl-example title="Ids">
@@ -36,15 +38,16 @@ ns:item     square teal
 web-server -> db_1 -> ns:item -> 42
 </modl-example>
 <p>
-  Ids are case-sensitive: <code>Api</code> and <code>api</code> are two different nodes. A line whose first word
-  isn't a valid id is reported as <code>invalid node id</code> and skipped. Use the label text to show anything an
-  id can't hold:
+  Ids are case-sensitive: <code>Api</code> and <code>api</code> are two different nodes. Quoting doesn't change an
+  id, so <code>"api"</code> and <code>api</code> are the same node. A line whose first word isn't a valid id is
+  reported as <code>invalid node id</code> and skipped. Quote the id, or use the label text, to show anything a
+  plain id can't hold:
 </p>
-<modl-example title="Put punctuation and spaces in the text, not the id">
-site    /example.com example.com
-version hex v1.2 (stable)
+<modl-example title="Quoted ids, or punctuation in the text" pos="example.com:120,200 v1.2:340,200 cafe:560,200">
+"example.com" /example.com
+"v1.2"  hex (stable)
 cafe    circle brown Café ☕
-site -> version -> cafe
+"example.com" -> "v1.2" -> cafe
 </modl-example>
 
 <h2 id="defaults">Defaults</h2>
@@ -80,9 +83,14 @@ d big square Bigger node, bigger text
 </modl-example>
 <p>
   Label text runs to the end of the line, or to a <a href="structure.html#comments">comment</a>. It can contain any
-  characters, including Unicode, except that whitespace followed by <code>#</code> starts a comment and
-  <code>-></code> makes the line an edge line.
+  characters, including Unicode, except that outside quotes whitespace followed by <code>#</code> starts a comment
+  and <code>-></code> makes the line an edge line. <a href="structure.html#quotes">Quote</a> the label, or just
+  the part with those characters, to use them:
 </p>
+<modl-example title="Quoted labels" pos="a:160,200 b:460,200">
+a square "Input -> Output"
+b square Fix issue "#42"
+</modl-example>
 <p>
   <code>white</code>, <code>yellow</code> and <code>green</code> nodes get dark label text, and all other colors get light
   text. On the default dark backdrop, labels on those three colors are hard to read, and on a light background the
@@ -112,22 +120,28 @@ n big                       # adds a size
 n hex New label             # replaces shape and label
 </modl-example>
 <p>
-  There is no way to remove an attribute once given, other than deleting the line. You can set it back explicitly
-  instead, for example with <code>normal</code>, <code>circle</code> or <code>gray</code>.
+  An empty quoted string clears the text, so the id is shown as the label again. Other attributes can't be removed
+  once given, other than by deleting the line. You can set them back explicitly instead, for example with
+  <code>normal</code>, <code>circle</code> or <code>gray</code>.
 </p>
+<modl-example title="Resetting a node">
+n big square red Label
+n normal circle gray ""     # back to the defaults, labeled n
+</modl-example>
 
 <h2 id="reserved-ids">Reserved words as ids</h2>
 <p>
   Because the id always comes first, a reserved word can be an id: <code>circle square</code> is a square node named
   <code>circle</code>. The exception is a line holding only a color name. That line sets the
-  <a href="structure.html#background">background</a>, so a node named after a color needs at least one attribute,
-  or must be created by an edge.
+  <a href="structure.html#background">background</a>, so a node named after a color must be quoted, have at least
+  one attribute, or be created by an edge.
 </p>
 <modl-example title="Nodes named after reserved words">
 circle square A node called circle
 big    triangle A node called big
-red    red                    # a node called red (a bare "red" line would set the background)
-red -> big -> circle
+red    red                    # a node called red (a bare red line would set the background)
+"blue"                        # a node called blue
+red -> big -> circle -> blue
 </modl-example>
 
 <h2 id="layout">Placement</h2>

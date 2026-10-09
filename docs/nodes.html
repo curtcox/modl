@@ -50,14 +50,16 @@
 
 <h2 id="ids">Ids</h2>
 <p>
-  The id is the first word on the line. It names the node, and edges refer to nodes by id. An id may contain only
-  ASCII letters, digits, underscore <code>_</code>, colon <code>:</code> and hyphen <code>-</code>.
+  The id is the first word on the line. It names the node, and edges refer to nodes by id. An unquoted id may
+  contain only ASCII letters, digits, underscore <code>_</code>, colon <code>:</code> and hyphen <code>-</code>. A
+  <a href="structure.html#quotes">quoted</a> id may contain anything, including spaces, but can't be empty.
 </p>
 <table>
   <tr><th>Valid ids</th><th>Invalid ids</th></tr>
   <tr>
-    <td><code>a</code> <code>Web</code> <code>web-server</code> <code>db_1</code> <code>ns:item</code> <code>42</code> <code>A:b_c-d</code></td>
-    <td><code>example.com</code> <code>v1.2</code> <code>x/y</code> <code>café</code> <code>"quoted"</code> <code>a+b</code> <code>(x)</code></td>
+    <td><code>a</code> <code>Web</code> <code>web-server</code> <code>db_1</code> <code>ns:item</code> <code>42</code> <code>A:b_c-d</code>
+      <code>"example.com"</code> <code>'v1.2'</code> <code>"my node"</code></td>
+    <td><code>example.com</code> <code>v1.2</code> <code>x/y</code> <code>café</code> <code>a+b</code> <code>(x)</code> <code>""</code></td>
   </tr>
 </table>
 <figure class="example">
@@ -69,16 +71,17 @@
 <a class="open" href="../#h1=eyJzcmMiOiJ3ZWItc2VydmVyICBzcXVhcmUgYmx1ZVxuZGJfMSAgICAgICAgc3F1YXJlIHB1cnBsZVxubnM6aXRlbSAgICAgc3F1YXJlIHRlYWxcbjQyICAgICAgICAgIHNxdWFyZSBvcmFuZ2VcbndlYi1zZXJ2ZXIgLT4gZGJfMSAtPiBuczppdGVtIC0-IDQyXG4iLCJwb3MiOnt9fQ">Open in editor</a>
 </figure>
 <p>
-  Ids are case-sensitive: <code>Api</code> and <code>api</code> are two different nodes. A line whose first word
-  isn't a valid id is reported as <code>invalid node id</code> and skipped. Use the label text to show anything an
-  id can't hold:
+  Ids are case-sensitive: <code>Api</code> and <code>api</code> are two different nodes. Quoting doesn't change an
+  id, so <code>"api"</code> and <code>api</code> are the same node. A line whose first word isn't a valid id is
+  reported as <code>invalid node id</code> and skipped. Quote the id, or use the label text, to show anything a
+  plain id can't hold:
 </p>
 <figure class="example">
-<figcaption>Put punctuation and spaces in the text, not the id</figcaption><pre class="modl"><code><span class="m-id">site</span>    <span class="m-url">/example.com</span> <span class="m-text">example.com</span>
-<span class="m-id">version</span> <span class="m-shape">hex</span> <span class="m-text">v1.2 (stable)</span>
+<figcaption>Quoted ids, or punctuation in the text</figcaption><pre class="modl"><code><span class="m-id">&quot;example.com&quot;</span> <span class="m-url">/example.com</span>
+<span class="m-id">&quot;v1.2&quot;</span>  <span class="m-shape">hex</span> <span class="m-text">(stable)</span>
 <span class="m-id">cafe</span>    <span class="m-shape">circle</span> <span class="m-color" style="--c:#92400e">brown</span> <span class="m-text">Café ☕</span>
-<span class="m-id">site</span> <span class="m-arrow">-&gt;</span> <span class="m-id">version</span> <span class="m-arrow">-&gt;</span> <span class="m-id">cafe</span></code></pre>
-<a class="open" href="../#h1=eyJzcmMiOiJzaXRlICAgIC9leGFtcGxlLmNvbSBleGFtcGxlLmNvbVxudmVyc2lvbiBoZXggdjEuMiAoc3RhYmxlKVxuY2FmZSAgICBjaXJjbGUgYnJvd24gQ2Fmw6kg4piVXG5zaXRlIC0-IHZlcnNpb24gLT4gY2FmZVxuIiwicG9zIjp7fX0">Open in editor</a>
+<span class="m-id">&quot;example.com&quot;</span> <span class="m-arrow">-&gt;</span> <span class="m-id">&quot;v1.2&quot;</span> <span class="m-arrow">-&gt;</span> <span class="m-id">cafe</span></code></pre>
+<a class="open" href="../#h1=eyJzcmMiOiJcImV4YW1wbGUuY29tXCIgL2V4YW1wbGUuY29tXG5cInYxLjJcIiAgaGV4IChzdGFibGUpXG5jYWZlICAgIGNpcmNsZSBicm93biBDYWbDqSDimJVcblwiZXhhbXBsZS5jb21cIiAtPiBcInYxLjJcIiAtPiBjYWZlXG4iLCJwb3MiOnsiZXhhbXBsZS5jb20iOlsxMjAsMjAwXSwidjEuMiI6WzM0MCwyMDBdLCJjYWZlIjpbNTYwLDIwMF19fQ">Open in editor</a>
 </figure>
 
 <h2 id="defaults">Defaults</h2>
@@ -117,9 +120,15 @@
 </figure>
 <p>
   Label text runs to the end of the line, or to a <a href="structure.html#comments">comment</a>. It can contain any
-  characters, including Unicode, except that whitespace followed by <code>#</code> starts a comment and
-  <code>-></code> makes the line an edge line.
+  characters, including Unicode, except that outside quotes whitespace followed by <code>#</code> starts a comment
+  and <code>-></code> makes the line an edge line. <a href="structure.html#quotes">Quote</a> the label, or just
+  the part with those characters, to use them:
 </p>
+<figure class="example">
+<figcaption>Quoted labels</figcaption><pre class="modl"><code><span class="m-id">a</span> <span class="m-shape">square</span> <span class="m-text">&quot;Input -&gt; Output&quot;</span>
+<span class="m-id">b</span> <span class="m-shape">square</span> <span class="m-text">Fix issue &quot;#42&quot;</span></code></pre>
+<a class="open" href="../#h1=eyJzcmMiOiJhIHNxdWFyZSBcIklucHV0IC0-IE91dHB1dFwiXG5iIHNxdWFyZSBGaXggaXNzdWUgXCIjNDJcIlxuIiwicG9zIjp7ImEiOlsxNjAsMjAwXSwiYiI6WzQ2MCwyMDBdfX0">Open in editor</a>
+</figure>
 <p>
   <code>white</code>, <code>yellow</code> and <code>green</code> nodes get dark label text, and all other colors get light
   text. On the default dark backdrop, labels on those three colors are hard to read, and on a light background the
@@ -151,23 +160,30 @@
 <a class="open" href="../#h1=eyJzcmMiOiJuIHNxdWFyZSBPcmlnaW5hbCBsYWJlbFxubiByZWQgICAgICAgICAgICAgICAgICAgICAgICMgYWRkcyBhIGNvbG9yLCBrZWVwcyBzaGFwZSBhbmQgbGFiZWxcbm4gYmlnICAgICAgICAgICAgICAgICAgICAgICAjIGFkZHMgYSBzaXplXG5uIGhleCBOZXcgbGFiZWwgICAgICAgICAgICAgIyByZXBsYWNlcyBzaGFwZSBhbmQgbGFiZWxcbiIsInBvcyI6e319">Open in editor</a>
 </figure>
 <p>
-  There is no way to remove an attribute once given, other than deleting the line. You can set it back explicitly
-  instead, for example with <code>normal</code>, <code>circle</code> or <code>gray</code>.
+  An empty quoted string clears the text, so the id is shown as the label again. Other attributes can't be removed
+  once given, other than by deleting the line. You can set them back explicitly instead, for example with
+  <code>normal</code>, <code>circle</code> or <code>gray</code>.
 </p>
+<figure class="example">
+<figcaption>Resetting a node</figcaption><pre class="modl"><code><span class="m-id">n</span> <span class="m-size">big</span> <span class="m-shape">square</span> <span class="m-color" style="--c:#ef4444">red</span> <span class="m-text">Label</span>
+<span class="m-id">n</span> <span class="m-size">normal</span> <span class="m-shape">circle</span> <span class="m-color" style="--c:#9aa4b2">gray</span> <span class="m-text">&quot;&quot;</span>     <span class="m-comment"># back to the defaults, labeled n</span></code></pre>
+<a class="open" href="../#h1=eyJzcmMiOiJuIGJpZyBzcXVhcmUgcmVkIExhYmVsXG5uIG5vcm1hbCBjaXJjbGUgZ3JheSBcIlwiICAgICAjIGJhY2sgdG8gdGhlIGRlZmF1bHRzLCBsYWJlbGVkIG5cbiIsInBvcyI6e319">Open in editor</a>
+</figure>
 
 <h2 id="reserved-ids">Reserved words as ids</h2>
 <p>
   Because the id always comes first, a reserved word can be an id: <code>circle square</code> is a square node named
   <code>circle</code>. The exception is a line holding only a color name. That line sets the
-  <a href="structure.html#background">background</a>, so a node named after a color needs at least one attribute,
-  or must be created by an edge.
+  <a href="structure.html#background">background</a>, so a node named after a color must be quoted, have at least
+  one attribute, or be created by an edge.
 </p>
 <figure class="example">
 <figcaption>Nodes named after reserved words</figcaption><pre class="modl"><code><span class="m-id">circle</span> <span class="m-shape">square</span> <span class="m-text">A node called circle</span>
 <span class="m-id">big</span>    <span class="m-shape">triangle</span> <span class="m-text">A node called big</span>
-<span class="m-id">red</span>    <span class="m-color" style="--c:#ef4444">red</span>                    <span class="m-comment"># a node called red (a bare &quot;red&quot; line would set the background)</span>
-<span class="m-id">red</span> <span class="m-arrow">-&gt;</span> <span class="m-id">big</span> <span class="m-arrow">-&gt;</span> <span class="m-id">circle</span></code></pre>
-<a class="open" href="../#h1=eyJzcmMiOiJjaXJjbGUgc3F1YXJlIEEgbm9kZSBjYWxsZWQgY2lyY2xlXG5iaWcgICAgdHJpYW5nbGUgQSBub2RlIGNhbGxlZCBiaWdcbnJlZCAgICByZWQgICAgICAgICAgICAgICAgICAgICMgYSBub2RlIGNhbGxlZCByZWQgKGEgYmFyZSBcInJlZFwiIGxpbmUgd291bGQgc2V0IHRoZSBiYWNrZ3JvdW5kKVxucmVkIC0-IGJpZyAtPiBjaXJjbGVcbiIsInBvcyI6e319">Open in editor</a>
+<span class="m-id">red</span>    <span class="m-color" style="--c:#ef4444">red</span>                    <span class="m-comment"># a node called red (a bare red line would set the background)</span>
+<span class="m-id">&quot;blue&quot;</span>                        <span class="m-comment"># a node called blue</span>
+<span class="m-id">red</span> <span class="m-arrow">-&gt;</span> <span class="m-id">big</span> <span class="m-arrow">-&gt;</span> <span class="m-id">circle</span> <span class="m-arrow">-&gt;</span> <span class="m-id">blue</span></code></pre>
+<a class="open" href="../#h1=eyJzcmMiOiJjaXJjbGUgc3F1YXJlIEEgbm9kZSBjYWxsZWQgY2lyY2xlXG5iaWcgICAgdHJpYW5nbGUgQSBub2RlIGNhbGxlZCBiaWdcbnJlZCAgICByZWQgICAgICAgICAgICAgICAgICAgICMgYSBub2RlIGNhbGxlZCByZWQgKGEgYmFyZSByZWQgbGluZSB3b3VsZCBzZXQgdGhlIGJhY2tncm91bmQpXG5cImJsdWVcIiAgICAgICAgICAgICAgICAgICAgICAgICMgYSBub2RlIGNhbGxlZCBibHVlXG5yZWQgLT4gYmlnIC0-IGNpcmNsZSAtPiBibHVlXG4iLCJwb3MiOnt9fQ">Open in editor</a>
 </figure>
 
 <h2 id="layout">Placement</h2>

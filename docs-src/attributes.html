@@ -27,6 +27,9 @@
   <li>Whatever is left is the text, joined with single spaces.</li>
 </ol>
 <p>
+  A <a href="structure.html#quotes">quoted</a> word never fills steps 1 to 4, so it always starts the text.
+</p>
+<p>
   Each slot is checked once, in that order, and the reader never goes back. Omitting a slot is therefore free, and
   any combination works, as long as the attributes you include stay in order:
 </p>
@@ -86,19 +89,25 @@ a square Big red circle with a dashed border
 a -> b Edges can say bold or blue too
 </modl-example>
 <p>
-  Whitespace inside text collapses to single spaces, and text ends at a <a href="structure.html#comments">comment</a>.
-  Only one URL is recognized; a second URL-like word is plain text.
+  Whitespace between words of text collapses to single spaces, and text ends at a
+  <a href="structure.html#comments">comment</a>. Only one URL is recognized; a second URL-like word is plain text.
 </p>
 <modl-example title="Second URL is text">
 docs /example.com see also /example.org
+</modl-example>
+<p>
+  Text can mix plain and <a href="structure.html#quotes">quoted</a> words. The quotes are removed and the words are
+  joined with single spaces, while whitespace inside the quotes is kept:
+</p>
+<modl-example title="Plain and quoted words in text">
+a square Step "1 -> 2" of "#3"     # label: Step 1 -> 2 of #3
 </modl-example>
 
 <h2 id="keywords-as-text">Starting text with a reserved word</h2>
 <p>
   If the label should <em>begin</em> with a reserved word, the reader will take that word as an attribute instead.
-  For example, <code>n big data</code> makes a big node labeled "data". The workaround is to fill a <em>later</em>
-  slot explicitly, so the reader is already past the slot the word belongs to. The color slot is usually the
-  easiest, using the default <code>gray</code> if you don't want a color:
+  For example, <code>n big data</code> makes a big node labeled "data". The simplest fix is to
+  <a href="structure.html#quotes">quote</a> the word, or the whole label:
 </p>
 <div class="grid2">
 <modl-example title="Problem" pos="a:140,120 b:420,120 c:140,320 d:420,320">
@@ -107,22 +116,25 @@ b red alert
 c circle of friends
 d hex nut
 </modl-example>
-<modl-example title="Workaround: give a later slot" pos="a:140,120 b:420,120 c:140,320 d:420,320">
-a circle big data
-b gray red alert
-c gray circle of friends
-d gray hex nut
+<modl-example title="Fixed: quote the label" pos="a:140,120 b:420,120 c:140,320 d:420,320">
+a "big" data
+b "red alert"
+c "circle of friends"
+d 'hex' nut
 </modl-example>
 </div>
 <p>
-  For edges, <code>a -> b gray dashed line</code> labels a gray, solid edge "dashed line". To start text with
-  something that looks like a URL, give a real URL first; there is no other escape.
+  Another way is to fill a <em>later</em> slot explicitly, so the reader is already past the slot the word belongs
+  to. The color slot is usually the easiest, using the default <code>gray</code> if you don't want a color:
+  <code>b gray red alert</code>. For edges, <code>a -> b "dashed line"</code> or
+  <code>a -> b gray dashed line</code> labels a gray, solid edge "dashed line". To start text with something that
+  looks like a URL, quote it: <code>a "/etc/hosts" file</code>.
 </p>
 
 <h2 id="case">Case</h2>
 <p>
   Reserved words are recognized only in lowercase. <code>Big</code>, <code>RED</code> and <code>Circle</code> are
-  always text, which is another way to start a label with one of these words:
+  always text, which is one more way to start a label with one of these words:
 </p>
 <modl-example title="Capitalized words are text">
 a Big Data
