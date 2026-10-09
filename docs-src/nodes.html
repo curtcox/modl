@@ -1,0 +1,142 @@
+<h1>Nodes</h1>
+<p class="lead">A node line declares a node, or updates one, by its id:</p>
+<pre class="modl"><code><span class="m-id">id</span>  [<span class="m-size">size</span>] [<span class="m-shape">shape</span>] [<span class="m-color" style="--c:#9aa4b2">color</span>] [<span class="m-url">url</span>] [<span class="m-text">text…</span>]</code></pre>
+<p>
+  Everything after the id is optional. Attributes that are present must appear in this order; the
+  <a href="attributes.html">Attributes</a> page explains how each word is recognized.
+</p>
+
+<modl-example title="Node lines">
+plain
+sized big
+shaped hex
+colored red
+linked /example.com
+labeled This is the label
+everything big hex red /example.com This is the label
+</modl-example>
+
+<h2 id="ids">Ids</h2>
+<p>
+  The id is the first word on the line. It names the node, and edges refer to nodes by id. An id may contain only
+  ASCII letters, digits, underscore <code>_</code>, colon <code>:</code> and hyphen <code>-</code>.
+</p>
+<table>
+  <tr><th>Valid ids</th><th>Invalid ids</th></tr>
+  <tr>
+    <td><code>a</code> <code>Web</code> <code>web-server</code> <code>db_1</code> <code>ns:item</code> <code>42</code> <code>A:b_c-d</code></td>
+    <td><code>example.com</code> <code>v1.2</code> <code>x/y</code> <code>café</code> <code>"quoted"</code> <code>a+b</code> <code>(x)</code></td>
+  </tr>
+</table>
+<modl-example title="Ids">
+web-server  square blue
+db_1        square purple
+ns:item     square teal
+42          square orange
+web-server -> db_1 -> ns:item -> 42
+</modl-example>
+<p>
+  Ids are case-sensitive: <code>Api</code> and <code>api</code> are two different nodes. A line whose first word
+  isn't a valid id is reported as <code>invalid node id</code> and skipped. Use the label text to show anything an
+  id can't hold:
+</p>
+<modl-example title="Put punctuation and spaces in the text, not the id">
+site    /example.com example.com
+version hex v1.2 (stable)
+cafe    circle brown Café ☕
+site -> version -> cafe
+</modl-example>
+
+<h2 id="defaults">Defaults</h2>
+<p>A node that doesn't specify an attribute gets the default:</p>
+<table>
+  <tr><th>Attribute</th><th>Default</th></tr>
+  <tr><td>size</td><td><code>normal</code></td></tr>
+  <tr><td>shape</td><td><code>circle</code></td></tr>
+  <tr><td>color</td><td><code>gray</code></td></tr>
+  <tr><td>url</td><td>none: clicking does nothing</td></tr>
+  <tr><td>text</td><td>none: the id is shown as the label</td></tr>
+</table>
+<div class="grid2">
+<modl-example title="Just an id">
+lonely
+</modl-example>
+<modl-example title="The same node, defaults spelled out">
+lonely normal circle gray
+</modl-example>
+</div>
+
+<h2 id="labels">Labels</h2>
+<p>
+  A node shows its text if it has any, and its id otherwise. Labels are centered on the node, and the font scales
+  with the node's size. Labels longer than 22 characters are cut to 21 characters plus <code>…</code>. Hover over
+  the node to see the full text, its id, and its link.
+</p>
+<modl-example title="Labels" pos="a:120,120 b:380,120 c:120,320 d:380,320">
+a
+b square Short label
+c square This label is much too long to fit in the node
+d big square Bigger node, bigger text
+</modl-example>
+<p>
+  Label text runs to the end of the line, or to a <a href="structure.html#comments">comment</a>. It can contain any
+  characters, including Unicode, except that whitespace followed by <code>#</code> starts a comment and
+  <code>-></code> makes the line an edge line.
+</p>
+<p>
+  <code>white</code>, <code>yellow</code> and <code>green</code> nodes get dark label text, and all other colors get light
+  text. On the default dark backdrop, labels on those three colors are hard to read, and on a light background the
+  reverse is true (see <a href="styles.html#label-contrast">label color</a>). A node with shape <code>none</code> draws
+  only its label, in the node's color.
+</p>
+
+<h2 id="implicit">Implicit nodes</h2>
+<p>
+  Any id used in an <a href="edges.html">edge</a> becomes a node with default attributes, so a diagram can consist of
+  edges alone. Add a node line, before or after the edge, to style a node.
+</p>
+<modl-example title="Nodes created by edges, one of them styled">
+a -> b -> c -> a
+b big square red Styled later
+</modl-example>
+
+<h2 id="redefining">Redefining nodes</h2>
+<p>
+  A node can appear on several node lines. Each line updates only the attributes it gives, and later lines win. In
+  particular, text is replaced only when a line provides new text, so repeating a bare id never erases a label.
+</p>
+<modl-example title="Attributes accumulate">
+n square Original label
+n red                       # adds a color, keeps shape and label
+n big                       # adds a size
+n hex New label             # replaces shape and label
+</modl-example>
+<p>
+  There is no way to remove an attribute once given, other than deleting the line. You can set it back explicitly
+  instead, for example with <code>normal</code>, <code>circle</code> or <code>gray</code>.
+</p>
+
+<h2 id="reserved-ids">Reserved words as ids</h2>
+<p>
+  Because the id always comes first, a reserved word can be an id: <code>circle square</code> is a square node named
+  <code>circle</code>. The exception is a line holding only a color name. That line sets the
+  <a href="structure.html#background">background</a>, so a node named after a color needs at least one attribute,
+  or must be created by an edge.
+</p>
+<modl-example title="Nodes named after reserved words">
+circle square A node called circle
+big    triangle A node called big
+red    red                    # a node called red (a bare "red" line would set the background)
+red -> big -> circle
+</modl-example>
+
+<h2 id="layout">Placement</h2>
+<p>
+  The language says nothing about where nodes go. Nodes without a saved position are spread around a circle in the
+  middle of the canvas, in id order. Drag a node to place it, and its position is stored in the URL. Renaming a
+  node's id makes it a new node, so it loses its position. See <a href="sharing.html#positions">Sharing &amp;
+  positions</a>.
+</p>
+<modl-example title="Automatic placement: ids in sorted order around a circle">
+n1 -> n2 -> n3 -> n4 -> n5 -> n6 -> n7 -> n8 -> n1
+</modl-example>

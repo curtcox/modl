@@ -1,0 +1,237 @@
+<h1>Example gallery</h1>
+<p class="lead">
+  Complete diagrams to open, study and adapt. Each one is laid out by hand, so its link carries node positions as
+  well as source.
+</p>
+
+<h2 id="flowchart">Flowchart</h2>
+<p>Diamonds for decisions, colored edge labels for the branches, and a dashed retry loop.</p>
+<modl-example title="Login flow" pos="start:360,45 form:360,140 check:360,255 home:180,370 error:560,370 stop:180,470">
+# A login flowchart
+start small circle teal Start
+form  square blue Enter credentials
+check diamond orange Valid?
+home  square teal Home page
+error square red Show error
+stop  small circle gray End
+
+start -> form -> check
+check -> home teal yes
+check -> error red no
+error -> form dashed red retry
+home -> stop
+</modl-example>
+
+<h2 id="state-machine">State machine</h2>
+<p>Hexagons for states. Solid edges are the happy path and dashed edges are exceptions.</p>
+<modl-example title="Order lifecycle" pos="new:100,120 paid:330,120 shipped:560,120 delivered:560,340 cancelled:100,340 refunded:330,340">
+# Order lifecycle
+new       hex blue New
+paid      hex teal Paid
+shipped   hex purple Shipped
+delivered hex pink Delivered
+cancelled hex red Cancelled
+refunded  hex orange Refunded
+
+new -> paid pay
+paid -> shipped ship
+shipped -> delivered deliver
+new -> cancelled dashed red cancel
+paid -> refunded dashed orange refund
+delivered -> refunded dotted orange return
+</modl-example>
+
+<h2 id="org-chart">Org chart</h2>
+<p>Sizes and colors show the hierarchy.</p>
+<modl-example title="Company structure" pos="ceo:360,80 cto:150,250 cfo:360,250 coo:570,250 dev:80,410 ops:220,410 acct:360,410 hr:570,410">
+ceo  big square purple CEO
+cto  square blue CTO
+cfo  square teal CFO
+coo  square pink COO
+dev  small square blue Engineering
+ops  small square blue IT
+acct small square teal Accounting
+hr   small square pink People
+
+ceo -> cto
+ceo -> cfo
+ceo -> coo
+cto -> dev
+cto -> ops
+cfo -> acct
+coo -> hr
+</modl-example>
+
+<h2 id="architecture">Architecture with icons</h2>
+<p>Image nodes using the icons that ship with these docs. Any image URL works.</p>
+<modl-example title="Web and mobile clients" pos="user:70,120 phone:70,340 cdn:240,120 web:420,120 api:420,340 db:600,340">
+# image nodes: id [size] [shape] [color] url text
+user  /curtcox.github.io/modl/docs/img/user.svg Visitor
+phone /curtcox.github.io/modl/docs/img/phone.svg Mobile app
+cdn   /curtcox.github.io/modl/docs/img/cloud.svg CDN
+web   /curtcox.github.io/modl/docs/img/server.svg Web server
+api   /curtcox.github.io/modl/docs/img/server.svg API
+db    /curtcox.github.io/modl/docs/img/database.svg Postgres
+
+user -> cdn -> web
+phone -> api blue REST
+web -> api
+api -> db bold orange SQL
+</modl-example>
+
+<h2 id="network">Network</h2>
+<p>A dark background, a bold ingress path, and dotted lines to the database tier.</p>
+<modl-example title="Load-balanced web tier" pos="internet:360,60 fw:360,170 lb:360,270 web1:170,390 web2:360,390 web3:550,390 db:360,500 replica:600,500">
+black
+internet circle blue /en.wikipedia.org/wiki/Internet Internet
+fw       diamond red Firewall
+lb       hex orange Load balancer
+web1     square teal web-1
+web2     square teal web-2
+web3     square teal web-3
+db       square purple DB primary
+replica  small square purple replica
+
+internet -> fw -> lb bold
+lb -> web1
+lb -> web2
+lb -> web3
+web1 -> db dotted
+web2 -> db dotted
+web3 -> db dotted
+db -> replica dashed purple sync
+</modl-example>
+
+<h2 id="pipeline">Data pipeline</h2>
+<p>A left-to-right flow with a linked source and labeled schedules.</p>
+<modl-example title="ETL" pos="csv:80,130 rest:80,330 ingest:250,230 clean:410,230 store:600,230 dash:520,430 ml:700,430">
+# ETL pipeline
+csv    square blue /en.wikipedia.org/wiki/Comma-separated_values CSV files
+rest   square blue REST API
+ingest hex teal Ingest
+clean  hex teal Clean
+store  big square purple Warehouse
+dash   square orange Dashboard
+ml     square pink ML model
+
+csv -> ingest
+rest -> ingest
+ingest -> clean -> store bold
+store -> dash dashed nightly
+store -> ml dashed weekly
+</modl-example>
+
+<h2 id="git">Git branches</h2>
+<p>Small circles for commits, <code>none</code> nodes as branch labels, and colors per branch.</p>
+<modl-example title="Feature branch merged back" pos="main:50,150 c1:150,150 c2:260,150 c3:370,150 m:590,150 feature:50,280 f1:370,280 f2:480,280">
+main    none gray main
+feature none teal feature
+c1 small circle gray
+c2 small circle gray
+c3 small circle gray
+f1 small circle teal
+f2 small circle teal
+m  small circle purple merge
+
+c1 -> c2 -> c3 -> m
+c2 -> f1 -> f2 teal
+f2 -> m dashed teal
+</modl-example>
+
+<h2 id="prerequisites">Course prerequisites</h2>
+<p>A dependency graph, with a dashed edge for a recommendation.</p>
+<modl-example title="Computer science track" pos="cs101:90,200 math1:90,400 cs102:270,120 cs202:470,50 cs201:470,240 cs301:660,140 cs302:660,400">
+cs101 square blue Intro to CS
+math1 square teal Discrete math
+cs102 square blue Data structures
+cs201 square purple Algorithms
+cs202 square purple Systems
+cs301 square pink Compilers
+cs302 square pink Machine learning
+
+cs101 -> cs102 -> cs201 -> cs301
+math1 -> cs201
+cs102 -> cs202 -> cs301
+cs201 -> cs302
+math1 -> cs302 dashed recommended
+</modl-example>
+
+<h2 id="link-hub">Link hub</h2>
+<p>Every node is a bookmark. Click a node in the editor to open its link.</p>
+<modl-example title="Bookmarks" pos="me:360,250 search:360,70 wiki:580,170 code:580,350 news:360,440 mail:140,350 docs:140,170">
+me     big circle purple Start here
+search square blue   /duckduckgo.com Search
+wiki   square teal   /en.wikipedia.org Wikipedia
+code   square gray   /github.com GitHub
+news   square orange /news.ycombinator.com Hacker News
+mail   square pink   mailto:someone@example.com Email
+docs   square purple /curtcox.github.io/modl/docs/ modl docs
+
+me -> search dotted
+me -> wiki dotted
+me -> code dotted
+me -> news dotted
+me -> mail dotted
+me -> docs dotted
+</modl-example>
+
+<h2 id="solar-system">Solar system</h2>
+<p>Sizes and colors on a black background, each body linked to its Wikipedia article.</p>
+<modl-example title="Inner planets and Jupiter" pos="sun:150,260 mercury:310,260 venus:380,260 earth:460,260 moon:460,340 mars:540,260 jupiter:670,260">
+black
+sun     bigger circle orange /en.wikipedia.org/wiki/Sun Sun
+mercury tiny circle gray /en.wikipedia.org/wiki/Mercury_(planet)
+venus   small circle orange /en.wikipedia.org/wiki/Venus
+earth   small circle blue /en.wikipedia.org/wiki/Earth
+moon    tiny circle gray /en.wikipedia.org/wiki/Moon
+mars    small circle red /en.wikipedia.org/wiki/Mars
+jupiter big circle brown /en.wikipedia.org/wiki/Jupiter Jupiter
+
+earth -> moon dotted gray
+</modl-example>
+
+<h2 id="mind-map">Mind map</h2>
+<p>A topic map of these docs, with each branch linked to its page.</p>
+<modl-example title="modl at a glance" pos="modl:360,290 syntax:170,160 nodes:60,70 edges:200,50 attrs:40,220 share:560,160 url:680,70 hashbin:500,50 look:360,470 styles:180,500 images:540,500">
+modl    big circle purple modl
+syntax  circle blue   /curtcox.github.io/modl/docs/structure.html Syntax
+nodes   small circle blue   /curtcox.github.io/modl/docs/nodes.html nodes
+edges   small circle blue   /curtcox.github.io/modl/docs/edges.html edges
+attrs   small circle blue   /curtcox.github.io/modl/docs/attributes.html attributes
+share   circle orange /curtcox.github.io/modl/docs/sharing.html Sharing
+url     small circle orange /curtcox.github.io/modl/docs/sharing.html#url URL
+hashbin small circle orange /curtcox.github.io/modl/docs/sharing.html#hashbin HashBin
+look    circle teal   /curtcox.github.io/modl/docs/styles.html Looks
+styles  small circle teal   /curtcox.github.io/modl/docs/styles.html styles
+images  small circle teal   /curtcox.github.io/modl/docs/links.html#images images
+
+modl -> syntax blue
+modl -> share orange
+modl -> look teal
+syntax -> nodes blue
+syntax -> edges blue
+syntax -> attrs blue
+share -> url orange
+share -> hashbin orange
+look -> styles teal
+look -> images teal
+</modl-example>
+
+<h2 id="default">The editor's starter diagram</h2>
+<p>The diagram the editor shows when opened without a link, or after <b>Reset</b>.</p>
+<modl-example title="Starter">
+# Diagram Editor — edit this text, then copy the URL
+
+# nodes (id  [size] [shape] [color] [url] [text...])
+n square red /google.com Node N
+m circle blue /wikipedia.org Node M
+t triangle green /example.com Triangle
+
+# edges (a -> b (-> c...)  [size] [lineStyle] [color] [url] [text...])
+n -> m solid purple /news.ycombinator.com N to M
+m -> t small dotted teal /slashdot.org Dotted link
+t -> n dashed orange /github.com Back edge
+
+# you can define nodes implicitly by referencing them in edges:
+a -> b -> c bold yellow /example.com Chain applies to each edge
+</modl-example>

@@ -22,10 +22,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Check docs are generated from docs-src
+        run: node scripts/build-docs.mjs --check
+
       - name: Stage site
         run: |
           mkdir -p _site
           cp index.html _site/index.html
+          cp -R docs _site/docs
 
       - name: Setup Pages
         uses: actions/configure-pages@v6

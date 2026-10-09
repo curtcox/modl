@@ -1,0 +1,132 @@
+<h1>Source structure</h1>
+<p class="lead">
+  modl source is read one line at a time. Every line stands on its own: there are no blocks, no
+  brackets, and no line continuations.
+</p>
+
+<h2 id="line-kinds">Kinds of lines</h2>
+<p>After its comment is removed, each line is classified by the first rule that matches:</p>
+<ol>
+  <li><b>Blank</b>: nothing left but whitespace, so the line is ignored.</li>
+  <li><b>Background</b>: the whole line is exactly one <a href="styles.html#colors">color name</a>, which sets the background color.</li>
+  <li><b>Edge</b>: the line contains <code>-></code> anywhere, so it declares one or more <a href="edges.html">edges</a>.</li>
+  <li><b>Node</b>: anything else declares or updates a <a href="nodes.html">node</a>.</li>
+</ol>
+<modl-example title="One of each">
+# a comment line, then a blank line
+
+teal               # background
+a square Start     # node
+a -> b             # edge
+</modl-example>
+
+<div class="warn">
+  <p>
+    Because rule 3 only looks for <code>-></code> somewhere in the line, a node label that contains
+    <code>-></code> turns the line into an edge line. See <a href="gotchas.html#arrow-in-text">Gotchas</a>.
+  </p>
+</div>
+
+<h2 id="comments">Comments</h2>
+<p>A <code>#</code> starts a comment in two situations:</p>
+<ul>
+  <li>It is the first non-blank character of the line, so the whole line is a comment, even when indented.</li>
+  <li>It follows whitespace (a space or tab), so the rest of the line is a comment.</li>
+</ul>
+<p>A <code>#</code> directly after another character is ordinary text. That keeps URL fragments and names like <code>C#</code> intact.</p>
+<modl-example title="Comment rules">
+# whole-line comment
+    # indented whole-line comment
+a square Server A        # trailing comment
+lang square C# and F#    # the # in C# and F# is text; this one starts a comment
+docs /example.com/page#section Fragment links survive
+</modl-example>
+
+<h2 id="whitespace">Whitespace</h2>
+<ul>
+  <li>Words are separated by any run of spaces or tabs. Indentation and alignment don't matter.</li>
+  <li>Spaces around <code>-></code> are optional: <code>a->b</code> and <code>a  ->  b</code> are the same.</li>
+  <li>Runs of whitespace inside label text collapse to a single space.</li>
+  <li>Blank lines are ignored. Both <code>\n</code> and <code>\r\n</code> line endings work.</li>
+</ul>
+<modl-example title="Whitespace doesn't matter">
+a->b
+    b   ->    c
+c	square	   lots    of     space
+</modl-example>
+
+<h2 id="order">Line order</h2>
+<p>
+  Lines can appear in any order. A node can be used in an edge before or after the line that styles it, and the
+  result is the same:
+</p>
+<div class="grid2">
+<modl-example title="Styles first" pos="a:160,200 b:420,200">
+a square red Alpha
+b hex blue Beta
+a -> b
+</modl-example>
+<modl-example title="Edges first" pos="a:160,200 b:420,200">
+a -> b
+a square red Alpha
+b hex blue Beta
+</modl-example>
+</div>
+<p>
+  Order matters in only two cases. When a node is declared more than once, later attributes override earlier ones
+  (see <a href="nodes.html#redefining">Redefining nodes</a>). When several background lines appear, the last one
+  wins.
+</p>
+
+<h2 id="background">Background color</h2>
+<p>
+  A line holding nothing but a color name (a trailing comment is fine) fills the canvas with that color. Without
+  one, the editor's default dark backdrop shows through. Background colors are solid, unlike node fills, which are
+  translucent.
+</p>
+<div class="grid2">
+<modl-example title="Black background">
+black
+a circle orange Sun
+b circle blue Earth
+a -> b yellow
+</modl-example>
+<modl-example title="White background">
+white
+a square blue Light theme
+a -> b black
+b circle black
+</modl-example>
+</div>
+<modl-example title="The last background line wins">
+red
+blue
+green     # this one is used
+a -> b
+</modl-example>
+<p>
+  Color names are case-sensitive, so <code>Red</code> alone on a line is a node named <code>Red</code>, not a
+  background. All 12 colors are shown on <a href="styles.html#colors">Sizes, shapes, lines &amp; colors</a>.
+</p>
+
+<h2 id="case">Case sensitivity</h2>
+<p>
+  Everything is case-sensitive. <code>Web</code> and <code>web</code> are different nodes, and only lowercase
+  reserved words are recognized. <code>BIG</code> or <code>Circle</code> are just label text.
+</p>
+<modl-example title="Case matters">
+web circle blue lowercase keywords work
+Web Circle Blue capitalized ones are text
+</modl-example>
+
+<h2 id="errors">Errors</h2>
+<p>
+  A line that can't be understood is listed in the editor's error box as <code>Line N: …</code>, counting
+  blank and comment lines. The rest of the diagram still draws. The possible messages are listed in the
+  <a href="reference.html#errors">grammar reference</a>.
+</p>
+<modl-example title="An error doesn't stop the rest">
+good -> fine
+bad.id circle red     # Line 2: invalid node id "bad.id"
+fine square teal Still drawn
+</modl-example>

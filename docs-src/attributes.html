@@ -1,0 +1,130 @@
+<h1>Attributes</h1>
+<p class="lead">
+  After the id (for nodes) or the last id (for edges) come up to five attributes, always in the same order. Each one
+  is optional.
+</p>
+
+<table>
+  <tr><th>#</th><th>Slot</th><th>Node values</th><th>Edge values</th></tr>
+  <tr><td>1</td><td>size</td><td colspan="2"><code>tiny</code> <code>small</code> <code>normal</code> <code>big</code> <code>bigger</code> <code>huge</code></td></tr>
+  <tr><td>2</td><td>style</td><td>shape: <code>none</code> <code>circle</code> <code>square</code> <code>diamond</code> <code>triangle</code> <code>hex</code></td><td>line style: <code>solid</code> <code>dashed</code> <code>dotted</code> <code>bold</code></td></tr>
+  <tr><td>3</td><td>color</td><td colspan="2"><code>gray</code> <code>black</code> <code>white</code> <code>red</code> <code>orange</code> <code>yellow</code> <code>green</code> <code>teal</code> <code>blue</code> <code>purple</code> <code>pink</code> <code>brown</code></td></tr>
+  <tr><td>4</td><td>url</td><td colspan="2">a word starting with <code>/</code>, <code>http://</code>, <code>https://</code>, <code>www.</code> or <code>mailto:</code></td></tr>
+  <tr><td>5</td><td>text</td><td colspan="2">all remaining words, to the end of the line</td></tr>
+</table>
+<p>
+  The values are described in detail on <a href="styles.html">Sizes, shapes, lines &amp; colors</a> and
+  <a href="links.html">Links &amp; image nodes</a>.
+</p>
+
+<h2 id="how">How words are recognized</h2>
+<p>The words after the id are read left to right against the slots, in order:</p>
+<ol>
+  <li>If the next word is a size, it becomes the size.</li>
+  <li>If the next word is a shape (for a node) or a line style (for an edge), it becomes the style.</li>
+  <li>If the next word is a color, it becomes the color.</li>
+  <li>If the next word looks like a URL, it becomes the link.</li>
+  <li>Whatever is left is the text, joined with single spaces.</li>
+</ol>
+<p>
+  Each slot is checked once, in that order, and the reader never goes back. Omitting a slot is therefore free, and
+  any combination works, as long as the attributes you include stay in order:
+</p>
+<modl-example title="Any subset, in order" pos="a:110,90 b:330,90 c:550,90 d:110,260 e:330,260 f:550,260 g:110,430 h:330,430 i:550,430">
+a big
+b hex
+c red
+d /example.com
+e Just text
+f big red
+g hex /example.com Shape and link
+h small diamond teal
+i big square blue /example.com All five
+</modl-example>
+<modl-example title="The same for edges" pos="a:100,80 b:420,80 c:100,200 d:420,200 e:100,320 f:420,320 g:100,440 h:420,440">
+a -> b bold
+c -> d red
+e -> f dotted /example.com
+g -> h big dashed purple /example.com All five
+</modl-example>
+
+<h2 id="out-of-order">Out-of-order words become text</h2>
+<p>
+  Once the reader has moved past a slot, a word that belongs in that slot is no longer recognized. It and
+  everything after it become label text. This is the most common surprise in modl. The highlighting shows the
+  result:
+</p>
+<modl-example title="Wrong order: the extra words end up in the label" pos="a:140,100 b:420,100 c:140,300 d:420,300">
+a red big          # color, then size: "big" is text
+b circle small     # shape, then size: "small" is text
+c blue square      # color, then shape: "square" is text
+d red blue         # only one color: "blue" is text
+</modl-example>
+<modl-example title="Fixed" pos="a:140,100 b:420,100 c:140,300 d:420,300">
+a big red
+b small circle
+c square blue
+d blue
+</modl-example>
+<p>
+  The same applies to edges, and to node shapes used on edges or line styles used on nodes. Those words aren't
+  valid in that position at all, so they always become text:
+</p>
+<modl-example title="Wrong vocabulary" pos="a:120,120 b:480,120 c:120,320 d:480,320">
+a -> b red dashed     # color, then style: "dashed" is text
+c dashed              # line styles aren't shapes: "dashed" is text
+c -> d circle         # shapes aren't line styles: "circle" is text
+</modl-example>
+
+<h2 id="text">Text</h2>
+<p>
+  The text is everything after the last recognized attribute. It may contain spaces, punctuation, Unicode and even
+  reserved words, since the attribute slots have already been passed by the time text starts:
+</p>
+<modl-example title="Reserved words inside text are just words" pos="a:220,200 b:520,200">
+a square Big red circle with a dashed border
+a -> b Edges can say bold or blue too
+</modl-example>
+<p>
+  Whitespace inside text collapses to single spaces, and text ends at a <a href="structure.html#comments">comment</a>.
+  Only one URL is recognized; a second URL-like word is plain text.
+</p>
+<modl-example title="Second URL is text">
+docs /example.com see also /example.org
+</modl-example>
+
+<h2 id="keywords-as-text">Starting text with a reserved word</h2>
+<p>
+  If the label should <em>begin</em> with a reserved word, the reader will take that word as an attribute instead.
+  For example, <code>n big data</code> makes a big node labeled "data". The workaround is to fill a <em>later</em>
+  slot explicitly, so the reader is already past the slot the word belongs to. The color slot is usually the
+  easiest, using the default <code>gray</code> if you don't want a color:
+</p>
+<div class="grid2">
+<modl-example title="Problem" pos="a:140,120 b:420,120 c:140,320 d:420,320">
+a big data
+b red alert
+c circle of friends
+d hex nut
+</modl-example>
+<modl-example title="Workaround: give a later slot" pos="a:140,120 b:420,120 c:140,320 d:420,320">
+a circle big data
+b gray red alert
+c gray circle of friends
+d gray hex nut
+</modl-example>
+</div>
+<p>
+  For edges, <code>a -> b gray dashed line</code> labels a gray, solid edge "dashed line". To start text with
+  something that looks like a URL, give a real URL first; there is no other escape.
+</p>
+
+<h2 id="case">Case</h2>
+<p>
+  Reserved words are recognized only in lowercase. <code>Big</code>, <code>RED</code> and <code>Circle</code> are
+  always text, which is another way to start a label with one of these words:
+</p>
+<modl-example title="Capitalized words are text">
+a Big Data
+b Red Alert
+</modl-example>

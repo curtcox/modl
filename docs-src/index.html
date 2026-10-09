@@ -1,0 +1,118 @@
+<h1>modl</h1>
+<p class="lead">
+  <b>modl</b> (Manual Override Diagram Language) is a small, line-oriented text language for
+  drawing node-and-arrow diagrams. Each line declares a node or an arrow. The
+  <a href="../">editor</a> redraws the diagram as you type and keeps the whole diagram, source and
+  layout, in its URL.
+</p>
+
+<modl-example title="Hello, world">
+hello -> world
+</modl-example>
+
+<p>
+  Every listing in these docs has an <b>Open in editor</b> link like the one above. The link carries the
+  example's source in its URL, so it opens the editor with that diagram loaded. Change it however you
+  like: nothing is saved anywhere unless you press <b>Save to HashBin</b>.
+</p>
+
+<h2 id="tour">A quick tour</h2>
+<p>A node line starts with an id, followed by optional attributes and a label:</p>
+<modl-example title="Nodes">
+api square blue API server
+db  diamond purple Database
+</modl-example>
+
+<p>An edge line connects ids with <code>-></code>. Ids that haven't been declared yet become nodes automatically:</p>
+<modl-example title="Edges">
+browser -> api -> db
+</modl-example>
+
+<p>Edges take attributes too, and <code>#</code> starts a comment:</p>
+<modl-example title="Nodes, edges, attributes and comments" pos="browser:120,220 api:360,220 db:600,220">
+# A three-tier web app
+browser circle teal /developer.mozilla.org Browser
+api     square blue API server
+db      diamond purple Database
+
+browser -> api bold blue HTTPS   # thick blue arrow with a label
+api -> db dashed SQL
+</modl-example>
+
+<p>A line with nothing but a color name sets the background:</p>
+<modl-example title="Background color">
+white
+sun big circle yellow Sun
+earth circle blue Earth
+sun -> earth dotted orange light
+</modl-example>
+
+<h2 id="cheat-sheet">Cheat sheet</h2>
+<table>
+  <tr><th>Line</th><th>Form</th><th>Example</th></tr>
+  <tr><td>Comment</td><td><code># anything</code>, or after code following whitespace</td><td><modl-link src="# a comment\na b # trailing comment">try it</modl-link></td></tr>
+  <tr><td>Background</td><td><code>color</code> alone on a line</td><td><modl-link src="black\na -> b">try it</modl-link></td></tr>
+  <tr><td>Node</td><td><code>id [size] [shape] [color] [url] [text…]</code></td><td><modl-link src="n big hex teal /example.com Label text">try it</modl-link></td></tr>
+  <tr><td>Edge</td><td><code>a -> b [-> c …] [size] [line style] [color] [url] [text…]</code></td><td><modl-link src="a -> b -> c dashed red /example.com Label">try it</modl-link></td></tr>
+</table>
+<table>
+  <tr><th>Attribute</th><th>Values</th></tr>
+  <tr><td>size</td><td><code>tiny</code> <code>small</code> <code>normal</code> <code>big</code> <code>bigger</code> <code>huge</code></td></tr>
+  <tr><td>shape (nodes)</td><td><code>none</code> <code>circle</code> <code>square</code> <code>diamond</code> <code>triangle</code> <code>hex</code></td></tr>
+  <tr><td>line style (edges)</td><td><code>solid</code> <code>dashed</code> <code>dotted</code> <code>bold</code></td></tr>
+  <tr><td>color</td><td><code>gray</code> <code>black</code> <code>white</code> <code>red</code> <code>orange</code> <code>yellow</code> <code>green</code> <code>teal</code> <code>blue</code> <code>purple</code> <code>pink</code> <code>brown</code></td></tr>
+  <tr><td>url</td><td><code>/host/path</code> (means <code>https://host/path</code>), <code>https://…</code>, <code>http://…</code>, <code>www.…</code>, <code>mailto:…</code></td></tr>
+  <tr><td>text</td><td>everything else up to the end of the line</td></tr>
+</table>
+<p>
+  Attributes are optional, but the ones you use must appear in this order. A word that is out of order becomes
+  part of the label instead (see <a href="attributes.html">Attributes</a>).
+</p>
+
+<modl-example title="Everything at once">
+# Comments start with #
+black                                          # background color
+
+# nodes: id [size] [shape] [color] [url] [text...]
+n square red /google.com Node N
+m circle blue /wikipedia.org Node M
+t triangle green /example.com Triangle
+
+# edges: a -> b (-> c ...) [size] [lineStyle] [color] [url] [text...]
+n -> m solid purple /news.ycombinator.com N to M
+m -> t small dotted teal /slashdot.org Dotted link
+t -> n dashed orange /github.com Back edge
+
+# nodes can be created just by mentioning them in an edge
+a -> b -> c bold yellow /example.com Chain applies to each edge
+</modl-example>
+
+<h2 id="reading">Reading the listings</h2>
+<p>Listings are highlighted the way the editor reads them, so you can see how each word is understood:</p>
+<pre class="modl legend"><code><span class="m-id">node-id</span> <span class="m-arrow">-></span> <span class="m-size">size</span> <span class="m-shape">shape / line style</span> <span class="m-color" style="--c:#3b82f6">color</span> <span class="m-url">url</span> <span class="m-text">label text</span> <span class="m-comment"># comment</span> <span class="m-bad">invalid id</span> <span class="m-ignored">ignored</span></code></pre>
+
+<h2 id="contents">Contents</h2>
+<ol class="toc">
+  <li><a href="structure.html">Source structure</a>: lines, comments, whitespace, background</li>
+  <li><a href="nodes.html">Nodes</a>: ids, defaults, labels, redefinition</li>
+  <li><a href="edges.html">Edges</a>: arrows, chains, labels, parallel edges</li>
+  <li><a href="attributes.html">Attributes</a>: slot order, how words are recognized, label text</li>
+  <li><a href="styles.html">Sizes, shapes, lines &amp; colors</a>: every reserved word</li>
+  <li><a href="links.html">Links &amp; image nodes</a>: URLs, clicking, pictures as nodes</li>
+  <li><a href="sharing.html">Sharing &amp; positions</a>: the URL format, layout, HashBin</li>
+  <li><a href="gotchas.html">Gotchas</a>: surprising behavior and workarounds</li>
+  <li><a href="reference.html">Grammar reference</a>: formal grammar, defaults, errors</li>
+  <li><a href="examples.html">Example gallery</a>: complete diagrams to start from</li>
+</ol>
+
+<h2 id="editor">Using the editor</h2>
+<ul>
+  <li>Type in the source pane; the diagram updates after a short pause and the URL updates with it.</li>
+  <li><b>Drag</b> a node to move it, <b>drag the background</b> to pan, and use <b>+</b>/<b>−</b> to zoom.</li>
+  <li><b>Hover</b> over a node or edge to see its id, full text, and link. <b>Click</b> to open its link.</li>
+  <li><b>Source</b>, <b>Diagram</b>, <b>Help</b> and <b>Split</b> switch between views.</li>
+  <li><b>Copy URL</b> copies a link to exactly what you see. <b>Commit snapshot</b> adds a browser history entry
+    so Back and Forward step between versions.</li>
+  <li><b>Save to HashBin</b> stores the diagram and replaces the long URL with a short one (see
+    <a href="sharing.html#hashbin">Sharing</a>).</li>
+</ul>

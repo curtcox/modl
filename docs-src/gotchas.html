@@ -1,0 +1,249 @@
+<h1>Gotchas</h1>
+<p class="lead">
+  modl's parser is deliberately simple, and a few of its rules produce surprising results. Each gotcha below has an
+  example you can open to see the behavior, plus a workaround.
+</p>
+<ol class="toc">
+  <li><a href="#arrow-in-text"><code>-></code> in a label makes an edge</a></li>
+  <li><a href="#hash-in-text">Space before <code>#</code> starts a comment</a></li>
+  <li><a href="#out-of-order">Out-of-order attributes become text</a></li>
+  <li><a href="#leading-keyword">Labels that start with a keyword</a></li>
+  <li><a href="#chain-words">Words in the middle of a chain are ignored</a></li>
+  <li><a href="#color-alone">A color alone on a line is a background</a></li>
+  <li><a href="#case">Keywords are case-sensitive</a></li>
+  <li><a href="#ids">Ids can't contain dots or spaces</a></li>
+  <li><a href="#bad-middle">A bad id in a chain joins its neighbors</a></li>
+  <li><a href="#dangling">A dangling arrow</a></li>
+  <li><a href="#sticky">Attributes can't be removed by redefining</a></li>
+  <li><a href="#edge-size">Edge size doesn't thicken lines</a></li>
+  <li><a href="#overlap">Repeated, reverse and self edges overlap</a></li>
+  <li><a href="#truncation">Long labels are truncated</a></li>
+  <li><a href="#image-quirks">Image node quirks</a></li>
+  <li><a href="#slash">A leading <code>/</code> means https</a></li>
+  <li><a href="#rename">Renaming a node loses its position</a></li>
+  <li><a href="#edge-ends">Edges run into wide nodes</a></li>
+</ol>
+
+<h2 id="arrow-in-text">1. <code>-></code> in a label makes an edge</h2>
+<p>
+  Any line containing <code>-></code> is an edge line, even when the arrow is meant as text. Below, the first line was
+  meant to be a node labeled "Input -> Output". Instead it creates an edge from <code>step</code> to a new node
+  named <code>Output</code>, and "square Input" is silently dropped.
+</p>
+<modl-example title="Problem">
+step square Input -> Output
+</modl-example>
+<p><b>Workaround:</b> use a Unicode arrow such as <code>→</code>, or words.</p>
+<modl-example title="Fixed">
+step square Input → Output
+</modl-example>
+
+<h2 id="hash-in-text">2. Space before <code>#</code> starts a comment</h2>
+<p>Whitespace followed by <code>#</code> ends the line. The label below is only "Fix issue".</p>
+<modl-example title="Problem">
+bug square red Fix issue #42
+</modl-example>
+<p><b>Workaround:</b> keep the <code>#</code> attached to the previous word, or use another character such as <code>No.</code> or the full-width <code>＃</code>.</p>
+<modl-example title="Fixed">
+bug1 square red Fix issue#42
+bug2 square red Fix issue＃42
+bug3 square red Fix issue No. 42
+</modl-example>
+
+<h2 id="out-of-order">3. Out-of-order attributes become text</h2>
+<p>
+  Attributes must come in the order size, style, color, URL. A word after its slot has been passed is label text,
+  along with everything after it, URLs included.
+</p>
+<modl-example title="Problem">
+a red square /example.com Home    # label is "square /example.com Home", no link
+</modl-example>
+<modl-example title="Fixed">
+a square red /example.com Home
+</modl-example>
+<p>See <a href="attributes.html#out-of-order">Attributes</a> for more examples.</p>
+
+<h2 id="leading-keyword">4. Labels that start with a keyword</h2>
+<p>If the label's first word is a reserved word for a slot that hasn't been passed yet, it becomes that attribute.</p>
+<modl-example title="Problem: big node labeled &quot;data&quot;, red node labeled &quot;alert&quot;">
+a big data
+b red alert
+</modl-example>
+<p>
+  <b>Workaround:</b> fill a later slot, for example with the default color <code>gray</code>, or capitalize the word.
+</p>
+<modl-example title="Fixed">
+a gray big data
+b gray red alert
+c Big Data
+</modl-example>
+
+<h2 id="chain-words">5. Words in the middle of a chain are ignored</h2>
+<p>In <code>a … -> b … -> c …</code>, only the last segment's attributes count. Everything after the id in earlier segments is dropped without an error.</p>
+<modl-example title="Problem">
+a -> b red -> c dashed
+</modl-example>
+<p><b>Workaround:</b> write differently styled edges on separate lines.</p>
+<modl-example title="Fixed">
+a -> b red
+b -> c dashed
+</modl-example>
+
+<h2 id="color-alone">6. A color alone on a line is a background</h2>
+<p>A line holding just a color name sets the background, so it can't declare a node called <code>red</code>.</p>
+<modl-example title="Problem: turns the canvas red instead of adding a node">
+red
+red -> green
+</modl-example>
+<p><b>Workaround:</b> give the node any attribute, or create it with an edge only.</p>
+<modl-example title="Fixed">
+red red
+red -> green
+</modl-example>
+
+<h2 id="case">7. Keywords are case-sensitive</h2>
+<p><code>Big</code>, <code>Square</code> and <code>Red</code> aren't keywords, so they become the label.</p>
+<modl-example title="Problem">
+a Big Square Red
+</modl-example>
+<modl-example title="Fixed">
+a big square red
+</modl-example>
+
+<h2 id="ids">8. Ids can't contain dots or spaces</h2>
+<p>
+  Ids allow only letters, digits, <code>_</code>, <code>:</code> and <code>-</code>. A line starting with something
+  like a domain name or version number is an error.
+</p>
+<modl-example title="Problem">
+example.com square blue
+v1.2 -> v1.3
+</modl-example>
+<p><b>Workaround:</b> use a simple id and put the real name in the text.</p>
+<modl-example title="Fixed">
+site square blue example.com
+v1_2 hex v1.2
+v1_3 hex v1.3
+v1_2 -> v1_3
+</modl-example>
+
+<h2 id="bad-middle">9. A bad id in a chain joins its neighbors</h2>
+<p>
+  When an id in the middle of a chain is invalid, the editor reports an error but still draws the chain without that
+  node, connecting the ids on either side. An invalid <em>last</em> id discards the whole line instead.
+</p>
+<modl-example title="Draws a -> c, reports b.x">
+a -> b.x -> c
+</modl-example>
+
+<h2 id="dangling">10. A dangling arrow</h2>
+<p>
+  A line with an arrow but only one id, like <code>a -></code>, is a <code>malformed edge line</code> error. Empty
+  segments are skipped, though, so <code>a -> b -></code> and <code>a -> -> b</code> both quietly mean
+  <code>a -> b</code>.
+</p>
+<modl-example title="One error, two edges">
+a ->
+b -> c ->
+d -> -> e
+</modl-example>
+
+<h2 id="sticky">11. Attributes can't be removed by redefining</h2>
+<p>
+  A later node line only overrides the attributes it gives. A bare id doesn't reset anything, and text can't be cleared
+  at all except by deleting the line that set it.
+</p>
+<modl-example title="Still big, red and labeled">
+n big square red Label
+n
+</modl-example>
+<p><b>Workaround:</b> set attributes back explicitly (<code>normal</code>, <code>circle</code>, <code>gray</code>) or delete the earlier line.</p>
+
+<h2 id="edge-size">12. Edge size doesn't thicken lines</h2>
+<p>On edges, size only scales the label. For a thicker line use <code>bold</code>.</p>
+<modl-example title="Problem: same thin line, bigger label" pos="a:140,200 b:520,200">
+a -> b huge heavy?
+</modl-example>
+<modl-example title="Fixed" pos="a:140,200 b:520,200">
+a -> b bold heavy
+</modl-example>
+
+<h2 id="overlap">13. Repeated, reverse and self edges overlap</h2>
+<p>
+  Edges are straight lines, so two edges between the same nodes are drawn on top of each other. Reverse edges overlap
+  too, giving a double-headed arrow. A self edge like <code>a -> a</code> has no length, so its arrowhead and label are
+  drawn on top of the node, covering the node's label.
+</p>
+<modl-example title="Overlapping edges and a self edge" pos="a:160,200 b:460,200">
+a -> b red one
+a -> b blue two
+b -> a green back
+a -> a self
+</modl-example>
+<p><b>Workaround:</b> combine parallel labels into one edge, or route through an extra node with shape <code>none</code>.</p>
+<modl-example title="Two labeled routes between the same nodes" pos="a:160,250 b:560,250 via1:360,130 via2:360,370">
+via1 small none red fast
+via2 small none blue cheap
+a -> via1 red
+via1 -> b red
+a -> via2 blue
+via2 -> b blue
+</modl-example>
+
+<h2 id="truncation">14. Long labels are truncated</h2>
+<p>Node labels show at most 22 characters and edge labels 28. The rest is replaced by <code>…</code>, and the full text shows on hover.</p>
+<modl-example title="Truncated labels" pos="a:180,200 b:540,200">
+a square A rather long name for a node
+b square Short
+a -> b This edge label is also quite long
+</modl-example>
+<p><b>Workaround:</b> keep labels short, or put details in a linked page.</p>
+
+<h2 id="image-quirks">15. Image node quirks</h2>
+<ul>
+  <li>The default shape isn't drawn around an image. A frame appears only when you write a shape.</li>
+  <li>Without text, an image node has no visible label, not even its id.</li>
+  <li>Without a size, an image is drawn at its natural size, which may be huge.</li>
+  <li>Every http(s) URL on a node is test-loaded as an image, so the browser contacts those sites when the diagram opens.</li>
+</ul>
+<modl-example title="Image with and without frame and text" pos="a:200,200 b:480,200">
+a /curtcox.github.io/modl/docs/img/cloud.svg
+b circle teal /curtcox.github.io/modl/docs/img/cloud.svg Cloud
+a -> b
+</modl-example>
+
+<h2 id="slash">16. A leading <code>/</code> means https</h2>
+<p>
+  <code>/example.com/page</code> is shorthand for <code>https://example.com/page</code>, not a path on the current
+  site. There is no relative-link form. A URL can't contain spaces, since the first space ends it.
+</p>
+<modl-example title="These go to https://docs/... and https://my">
+a /docs/intro.html Not a relative link
+b /my page.html Space ends the URL
+</modl-example>
+
+<h2 id="rename">17. Renaming a node loses its position</h2>
+<p>
+  Positions are stored by id. Changing an id, even its case, creates a new node that is placed automatically, and the
+  old position is discarded. To relabel a node without moving it, change its text instead of its id.
+</p>
+
+<h2 id="edge-ends">18. Edges run into wide nodes</h2>
+<p>
+  An edge stops at a fixed distance from a node's center rather than at its outline. A square is wider than that
+  distance, so a line arriving from the side runs into the box and can cross the label. Large nodes make it worse.
+</p>
+<modl-example title="Problem: side-on arrows cross square labels" pos="a:140,200 b:480,200">
+a big square blue Source system
+b big square purple Target system
+a -> b
+</modl-example>
+<p>
+  <b>Workaround:</b> place connected squares above and below each other rather than side by side, or use circles,
+  which the lines don't enter.
+</p>
+<modl-example title="Fixed" pos="a:300,110 b:300,380">
+a big square blue Source system
+b big square purple Target system
+a -> b
+</modl-example>

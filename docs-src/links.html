@@ -1,0 +1,129 @@
+<h1>Links &amp; image nodes</h1>
+<p class="lead">
+  Any node or edge can carry one URL. Clicking it opens the link in a new tab. If a node's URL points to an image,
+  the node is drawn as that image.
+</p>
+
+<h2 id="urls">URL syntax</h2>
+<p>
+  The URL is the fourth <a href="attributes.html">attribute slot</a>, after size, style and color. A word is taken
+  as a URL when it starts with one of these prefixes:
+</p>
+<table>
+  <tr><th>You write</th><th>Link goes to</th><th></th></tr>
+  <tr><td><code>/example.com/docs</code></td><td><code>https://example.com/docs</code></td><td><modl-link src="n square blue /example.com/docs Shorthand">try it</modl-link></td></tr>
+  <tr><td><code>https://example.com</code></td><td>unchanged</td><td><modl-link src="n square blue https://example.com Full URL">try it</modl-link></td></tr>
+  <tr><td><code>http://example.com</code></td><td>unchanged</td><td><modl-link src="n square blue http://example.com Plain HTTP">try it</modl-link></td></tr>
+  <tr><td><code>www.example.com</code></td><td><code>https://www.example.com</code></td><td><modl-link src="n square blue www.example.com www shorthand">try it</modl-link></td></tr>
+  <tr><td><code>mailto:someone@example.com</code></td><td>unchanged: opens your mail program</td><td><modl-link src="n square pink mailto:someone@example.com Email me">try it</modl-link></td></tr>
+</table>
+<p>
+  The leading-slash form is the shortest way to write an HTTPS link. It means "https:// plus the rest", not a path on
+  the current site, so relative links aren't possible. A URL is a single word: it ends at the first space, so encode
+  spaces as <code>%20</code>. Query strings and <code>#fragments</code> work, because a <code>#</code> only starts a
+  comment after whitespace.
+</p>
+<modl-example title="Linked nodes" pos="wiki:120,120 mdn:360,120 search:600,120 mail:240,330 home:480,330">
+wiki   square teal /en.wikipedia.org/wiki/Graph_drawing Graph drawing
+mdn    square blue https://developer.mozilla.org/en-US/docs/Web/SVG#tutorials SVG docs
+search square gray /duckduckgo.com/?q=modl+diagram Search
+mail   circle pink mailto:someone@example.com?subject=Hello Email
+home   hex teal www.example.com Home page
+</modl-example>
+
+<h2 id="edge-links">Links on edges</h2>
+<p>Edges take a URL in the same position. Click anywhere along the line to follow it:</p>
+<modl-example title="Linked edges" pos="spec:140,200 impl:520,200">
+spec square blue Specification
+impl square teal Implementation
+spec -> impl bold teal /github.com/curtcox/modl implemented by
+impl -> spec dashed blue /en.wikipedia.org/wiki/Conformance_testing tested against
+</modl-example>
+
+<h2 id="clicking">Clicking, hovering, dragging</h2>
+<ul>
+  <li><b>Click</b> a node or edge to open its URL in a new tab. Nodes and edges without a URL do nothing.</li>
+  <li><b>Hover</b> to see the node id (or edge endpoints), full text and link in a tooltip.</li>
+  <li><b>Dragging</b> a linked node moves it without opening the link.</li>
+</ul>
+
+<h2 id="images">Image nodes</h2>
+<p>A node whose URL is an image is drawn as the image itself instead of a shape. The editor treats a URL as an image when:</p>
+<ul>
+  <li>its path ends in an image extension (<code>.svg</code>, <code>.png</code>, <code>.apng</code>, <code>.jpg</code>,
+    <code>.jpeg</code>, <code>.gif</code>, <code>.webp</code>, <code>.avif</code>, <code>.bmp</code>, <code>.ico</code>,
+    any letter case), or</li>
+  <li>it has no such extension, but the browser can load it as an image anyway. The editor tries every
+    <code>http(s)</code> node URL in the background, and the node switches to the picture once it loads.</li>
+</ul>
+<p>
+  If an image fails to load, the node falls back to its normal shape. Edges never become images, and clicking an image
+  node still opens its URL.
+</p>
+<modl-example title="Image nodes" pos="logo:140,140 avatar:400,140 favicon:620,140 icon:400,360">
+logo    https://upload.wikimedia.org/wikipedia/commons/0/02/SVG_logo.svg SVG logo
+avatar  /github.com/github.png GitHub
+favicon /www.google.com/favicon.ico favicon
+icon    /curtcox.github.io/modl/docs/img/server.svg server.svg
+logo -> avatar -> favicon
+avatar -> icon
+</modl-example>
+<modl-example title="No extension: detected by loading it" pos="me:240,200 them:520,200">
+me   https://avatars.githubusercontent.com/u/9919 Detected as an image
+them square /example.com Not an image, so a normal node
+me -> them
+</modl-example>
+
+<h3 id="image-size">Image size</h3>
+<p>
+  Without a size, an image is drawn at its natural pixel size. With a size, it is scaled to fit inside that size's node
+  box (110 × 64 for <code>normal</code>; see <a href="styles.html#sizes">sizes</a>), keeping its proportions.
+</p>
+<modl-example title="A 64 × 64 icon at its natural size and at explicit sizes" pos="natural:100,200 t:220,200 s:320,200 n:440,200 b:640,200">
+natural  /curtcox.github.io/modl/docs/img/user.svg natural
+t tiny   /curtcox.github.io/modl/docs/img/user.svg tiny
+s small  /curtcox.github.io/modl/docs/img/user.svg small
+n normal /curtcox.github.io/modl/docs/img/user.svg normal
+b big    /curtcox.github.io/modl/docs/img/user.svg big
+</modl-example>
+
+<h3 id="image-frames">Frames and color</h3>
+<p>
+  An image node has no outline unless you give a shape <em>explicitly</em>, since the default <code>circle</code> isn't
+  drawn. A given shape becomes a frame around the image, filled and outlined in the node's color. Shape
+  <code>none</code> means no frame.
+</p>
+<modl-example title="Frames" pos="plain:100,160 c:280,160 s:460,160 d:640,160 t:190,380 h:420,380 n:620,380">
+plain   /curtcox.github.io/modl/docs/img/user.svg no frame
+c circle   blue   /curtcox.github.io/modl/docs/img/user.svg circle
+s square   green  /curtcox.github.io/modl/docs/img/user.svg square
+d diamond  orange /curtcox.github.io/modl/docs/img/user.svg diamond
+t triangle red    /curtcox.github.io/modl/docs/img/user.svg triangle
+h hex      purple /curtcox.github.io/modl/docs/img/user.svg hex
+n none     pink   /curtcox.github.io/modl/docs/img/user.svg none
+</modl-example>
+
+<h3 id="image-labels">Labels</h3>
+<p>
+  An image node's text is drawn <em>below</em> the image. An image node without text has no label at all; its id isn't
+  shown. Hover to see the id.
+</p>
+<modl-example title="Text goes underneath" pos="a:200,200 b:480,200">
+a /curtcox.github.io/modl/docs/img/database.svg Orders DB
+b /curtcox.github.io/modl/docs/img/database.svg
+a -> b dashed replica
+</modl-example>
+
+<div class="note">
+  <p>
+    Because the editor tries to load every node URL as an image, your browser requests each linked page in the
+    background when a diagram opens. This is how images without an extension are detected.
+  </p>
+</div>
+
+<p>
+  The icons used in these examples live with the documentation at
+  <code>https://curtcox.github.io/modl/docs/img/</code>: <code>user.svg</code>, <code>server.svg</code>,
+  <code>database.svg</code>, <code>cloud.svg</code> and <code>phone.svg</code>. Any publicly reachable image works the
+  same way.
+</p>

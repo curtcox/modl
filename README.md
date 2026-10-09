@@ -8,6 +8,12 @@ Live: https://curtcox.github.io/modl/
 [curtcox/SFWA](https://github.com/curtcox/SFWA). It is deployed to GitHub Pages by
 `.github/workflows/deploy-pages.yml` on every push to `main`.
 
+Language documentation: https://curtcox.github.io/modl/docs/
+
+The pages in `docs/` are generated from the templates in `docs-src/` by `node scripts/build-docs.mjs`, which turns each
+`<modl-example>` block into a highlighted listing with an "Open in editor" link carrying the source in a `#h1=` URL.
+Edit the templates, run the script, and commit both; the deploy workflow fails if `docs/` is out of date.
+
 Diagrams can be saved to [HashBin](https://hashbin.org) (signing in with HashBin OAuth). A URL whose
 fragment is a [256t](https://256t.org) string, such as `https://curtcox.github.io/modl/#<256t string>`,
 loads that diagram from HashBin. The HashBin support is ported from

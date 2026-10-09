@@ -46,6 +46,7 @@
     .btn:hover { background: rgba(255,255,255,0.10); }
     .btn:active { transform: translateY(1px); }
     .btn.secondary { font-weight: 600; color: var(--muted); }
+    a.btn { display: inline-block; text-decoration: none; font-size: 13.33px; }
     .btn.active { background: rgba(91, 156, 255, 0.22); border-color: rgba(91, 156, 255, 0.55); }
     .spacer { flex: 1; }
     .status { font-size: 12px; color: var(--muted); display: flex; gap: 10px; align-items: center; }
@@ -90,6 +91,8 @@
       max-height: 42%;
     }
     .help h3 { margin: 8px 0 6px; font-size: 12px; color: var(--text); }
+    .help a { color: #8ab4ff; }
+    .help h3 a { font-weight: 400; margin-left: 6px; }
     .help code, .help pre {
       font-family: var(--mono);
       background: rgba(255,255,255,0.04);
@@ -255,6 +258,7 @@
     <button class="btn" id="btnViewDiagram" type="button">Diagram</button>
     <button class="btn" id="btnViewHelp" type="button">Help</button>
     <button class="btn active" id="btnViewSplit" type="button">Split</button>
+    <a class="btn" href="docs/" target="_blank" rel="noopener" title="The modl language documentation, with examples">Docs</a>
     <div class="spacer"></div>
     <button class="btn primary" id="btnSave" type="button" title="Store this diagram on hashbin.org and put its 256t CID in the URL.">Save to HashBin</button>
     <button class="btn secondary" id="btnCommit" title="Push a history entry (Back/Forward friendly).">Commit snapshot</button>
@@ -284,7 +288,7 @@
       <div id="errorBox" class="errorBox"></div>
 
       <div class="help" id="help">
-        <h3>Diagram definition language</h3>
+        <h3>Diagram definition language <a href="docs/" target="_blank" rel="noopener">full documentation and examples</a></h3>
         <div class="box">
           <div><code>#</code> starts a comment. Inline comments are supported.</div>
           <div style="margin-top:8px;">
@@ -312,9 +316,18 @@
           <div style="margin-top:8px;">
             A line containing only a supported color name sets the diagram background color.
           </div>
+          <div style="margin-top:8px;">
+            More: <a href="docs/nodes.html" target="_blank" rel="noopener">nodes</a> ·
+            <a href="docs/edges.html" target="_blank" rel="noopener">edges</a> ·
+            <a href="docs/attributes.html" target="_blank" rel="noopener">attribute order</a> ·
+            <a href="docs/links.html" target="_blank" rel="noopener">links &amp; images</a> ·
+            <a href="docs/gotchas.html" target="_blank" rel="noopener">gotchas</a> ·
+            <a href="docs/reference.html" target="_blank" rel="noopener">grammar</a> ·
+            <a href="docs/examples.html" target="_blank" rel="noopener">example gallery</a>
+          </div>
         </div>
 
-        <h3>Reserved words</h3>
+        <h3>Reserved words <a href="docs/styles.html" target="_blank" rel="noopener">details</a></h3>
         <div class="grid">
           <div class="box">
             <div><b>Node shapes</b> (style)</div>
@@ -346,7 +359,7 @@
           </div>
         </div>
 
-        <h3>Saving on HashBin</h3>
+        <h3>Saving on HashBin <a href="docs/sharing.html" target="_blank" rel="noopener">sharing &amp; URL format</a></h3>
         <div class="box">
           <div>
             <b>Save to HashBin</b> uploads the source and node positions to hashbin.org, paid from your

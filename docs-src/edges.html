@@ -1,0 +1,156 @@
+<h1>Edges</h1>
+<p class="lead">An edge line draws an arrow from one node to another:</p>
+<pre class="modl"><code><span class="m-id">from</span> <span class="m-arrow">-></span> <span class="m-id">to</span> [<span class="m-arrow">-></span> <span class="m-id">more</span> …]  [<span class="m-size">size</span>] [<span class="m-line">line style</span>] [<span class="m-color" style="--c:#9aa4b2">color</span>] [<span class="m-url">url</span>] [<span class="m-text">text…</span>]</code></pre>
+<p>
+  Any line containing <code>-></code> is an edge line. Attributes come after the last id, in the order shown, and
+  each one is optional.
+</p>
+
+<modl-example title="Edge lines" pos="a:100,80 b:400,80 c:100,220 d:400,220 e:100,360 f:400,360">
+a -> b
+c -> d dashed red
+e -> f big bold blue /example.com Labeled, linked edge
+</modl-example>
+
+<h2 id="arrows">Arrows</h2>
+<p>
+  Every edge is a straight line from center to center, with an arrowhead at the target node, colored like the line.
+  Each end is pulled back by a fixed distance that depends on the node's shape and size, not by the exact outline.
+  So lines stop a little short of circles, and they reach into wide shapes such as squares when they arrive from the
+  side. <a href="links.html#images">Image nodes</a> are the exception: their lines stop exactly at the image or its
+  frame. Spaces around <code>-></code> are optional.
+</p>
+<modl-example title="No spaces needed" pos="a:160,200 b:420,200">
+a->b
+</modl-example>
+<modl-example title="Where lines end, by shape" pos="c:120,120 s:120,280 d:120,440 h:560,280">
+c circle blue circle
+s square blue square
+d diamond blue diamond
+h big hex purple hub
+c -> h
+s -> h
+d -> h
+h -> s dashed
+</modl-example>
+
+<h2 id="implicit-nodes">Edges create nodes</h2>
+<p>
+  The ids on an edge line don't need to be declared first. A missing node is created with the
+  <a href="nodes.html#defaults">default attributes</a>. Style it with a node line anywhere in the source.
+</p>
+<modl-example title="Declared and undeclared ends">
+db square purple Database
+app -> db
+</modl-example>
+
+<h2 id="chains">Chains</h2>
+<p>
+  Several arrows on one line make a chain. <code>a -> b -> c -> d</code> is three edges: a→b, b→c and c→d. The
+  attributes at the end of the line apply to <em>every</em> edge in the chain, including its label.
+</p>
+<modl-example title="A styled chain" pos="a:100,200 b:280,200 c:460,200 d:640,200">
+a -> b -> c -> d dotted green step
+</modl-example>
+<p>
+  Only the last segment can carry attributes. In earlier segments only the first word, the id, counts. Anything else
+  is silently ignored, shown struck through below:
+</p>
+<modl-example title="Words before an arrow are ignored" pos="a:160,200 b:420,200">
+a big red -> b
+</modl-example>
+<p>To style the edges of one path differently, write them on separate lines:</p>
+<modl-example title="One edge per line" pos="a:100,200 b:280,200 c:460,200 d:640,200">
+a -> b solid green
+b -> c dashed orange
+c -> d dotted red
+</modl-example>
+
+<h2 id="defaults">Defaults</h2>
+<table>
+  <tr><th>Attribute</th><th>Default</th></tr>
+  <tr><td>size</td><td><code>normal</code></td></tr>
+  <tr><td>line style</td><td><code>solid</code></td></tr>
+  <tr><td>color</td><td><code>gray</code></td></tr>
+  <tr><td>url</td><td>none</td></tr>
+  <tr><td>text</td><td>none: the edge has no label</td></tr>
+</table>
+
+<h2 id="line-styles">Line styles</h2>
+<p>
+  <code>solid</code>, <code>dashed</code>, <code>dotted</code> and <code>bold</code> (a thicker solid line). An edge has
+  one style. There is no way to make a line both dashed and bold.
+</p>
+<modl-example title="All four line styles" pos="a1:100,80 b1:420,80 a2:100,190 b2:420,190 a3:100,300 b3:420,300 a4:100,410 b4:420,410">
+a1 -> b1 solid solid
+a2 -> b2 dashed dashed
+a3 -> b3 dotted dotted
+a4 -> b4 bold bold
+</modl-example>
+<p>
+  Each label above repeats the style name: the first <code>solid</code> is the line style, and the second, which
+  comes after the style slot is filled, is label text. See <a href="attributes.html#keywords-as-text">keywords as
+  text</a>.
+</p>
+
+<h2 id="size">Edge size</h2>
+<p>
+  An edge's size scales its <b>label</b> only. It doesn't change the line's thickness; use <code>bold</code> for
+  that. Edge labels are 12px at <code>normal</code> and scale like nodes, with a 10px minimum, so <code>tiny</code>
+  and <code>small</code> both give 10px labels.
+</p>
+<modl-example title="Edge sizes change label size" pos="a1:80,60 b1:520,60 a2:80,160 b2:520,160 a3:80,280 b3:520,280 a4:80,420 b4:520,420">
+a1 -> b1 small small label
+a2 -> b2 normal normal label
+a3 -> b3 big big label
+a4 -> b4 bigger bigger
+</modl-example>
+
+<h2 id="labels">Edge labels</h2>
+<p>
+  An edge label is drawn at the middle of the line, nudged a little to one side. Labels longer than 28 characters are
+  cut to 27 plus <code>…</code>. Hover over the edge to see the full text, its endpoints and its link. Clicking an edge
+  with a URL opens the link (see <a href="links.html">Links</a>).
+</p>
+<modl-example title="Edge labels" pos="client:120,120 server:520,120 cache:520,380">
+client -> server blue /developer.mozilla.org/en-US/docs/Web/HTTP GET /index.html
+server -> cache dashed purple Look up the rendered page in the cache before rendering
+</modl-example>
+
+<h2 id="multiple">Repeated, reverse and self edges</h2>
+<p>
+  Each edge line adds new edges, even when the same pair is already connected. Edges are straight lines, so repeated
+  edges are drawn exactly on top of each other and look like one. Their labels overlap too.
+</p>
+<modl-example title="Two edges in the same direction overlap" pos="a:160,200 b:460,200">
+a -> b red first
+a -> b blue second
+</modl-example>
+<p>
+  Edges in opposite directions also overlap, which produces a line with an arrowhead at each end. This is the usual
+  way to show a two-way connection:
+</p>
+<modl-example title="Two-way connection" pos="client:160,200 server:460,200">
+client -> server teal
+server -> client teal
+</modl-example>
+<p>
+  An edge from a node to itself (<code>a -> a</code>) is accepted, but it has no length: its arrowhead and label land
+  on top of the node and obscure the node's own label. Use the node's text to describe a self-transition instead.
+</p>
+
+<h2 id="fan">Fan-out and fan-in</h2>
+<p>A chain is a single path, so branching takes one line per branch:</p>
+<modl-example title="Hub and spokes" pos="hub:360,250 n:360,80 e:580,250 s:360,420 w:140,250">
+hub big circle purple Hub
+hub -> n
+hub -> e
+hub -> s
+hub -> w
+</modl-example>
+<modl-example title="Merging paths" pos="a:120,100 b:120,250 c:120,400 sink:480,250">
+a -> sink teal
+b -> sink teal
+c -> sink teal
+sink square teal Collected
+</modl-example>

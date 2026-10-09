@@ -1,0 +1,158 @@
+<h1>Sizes, shapes, lines &amp; colors</h1>
+<p class="lead">
+  modl has 28 reserved words: six sizes, six node shapes, four line styles and twelve colors. They are recognized
+  only in lowercase, and only in their <a href="attributes.html">attribute slot</a>.
+</p>
+
+<h2 id="sizes">Sizes</h2>
+<p>
+  A size scales a node by a fixed factor of the normal node box, 110 × 64 pixels. For edges, size scales only the
+  <a href="edges.html#size">label</a>. Labels never go below 10px.
+</p>
+<table>
+  <tr><th>Size</th><th>Scale</th><th>Node box</th><th>Node label</th><th>Edge label</th><th></th></tr>
+  <tr><td><code>tiny</code></td><td>¼×</td><td>27.5 × 16</td><td>10px</td><td>10px</td><td><modl-link src="n tiny square blue">try it</modl-link></td></tr>
+  <tr><td><code>small</code></td><td>½×</td><td>55 × 32</td><td>10px</td><td>10px</td><td><modl-link src="n small square blue">try it</modl-link></td></tr>
+  <tr><td><code>normal</code></td><td>1×</td><td>110 × 64</td><td>13px</td><td>12px</td><td><modl-link src="n normal square blue">try it</modl-link></td></tr>
+  <tr><td><code>big</code></td><td>2×</td><td>220 × 128</td><td>26px</td><td>24px</td><td><modl-link src="n big square blue">try it</modl-link></td></tr>
+  <tr><td><code>bigger</code></td><td>4×</td><td>440 × 256</td><td>52px</td><td>48px</td><td><modl-link src="n bigger square blue">try it</modl-link></td></tr>
+  <tr><td><code>huge</code></td><td>8×</td><td>880 × 512</td><td>104px</td><td>96px</td><td><modl-link src="n huge square blue">try it</modl-link></td></tr>
+</table>
+<modl-example title="tiny through big" pos="tiny:80,200 small:180,200 normal:320,200 big:540,200">
+tiny   tiny square teal
+small  small square teal
+normal normal square teal
+big    big square teal
+</modl-example>
+<modl-example title="bigger and huge need room (zoom out with −)" pos="bigger:260,260 huge:900,260">
+bigger bigger circle orange
+huge   huge circle red
+bigger -> huge bold
+</modl-example>
+<p>
+  For an <a href="links.html#images">image node</a>, a size means "fit the picture inside this box". Without a size,
+  the image is shown at its natural size.
+</p>
+
+<h2 id="shapes">Node shapes</h2>
+<table>
+  <tr><th>Shape</th><th>Drawn as</th><th></th></tr>
+  <tr><td><code>circle</code></td><td>a circle (the default)</td><td><modl-link src="n big circle blue circle">try it</modl-link></td></tr>
+  <tr><td><code>square</code></td><td>a rounded rectangle, wider than tall</td><td><modl-link src="n big square blue square">try it</modl-link></td></tr>
+  <tr><td><code>diamond</code></td><td>a rhombus filling the node box</td><td><modl-link src="n big diamond blue diamond">try it</modl-link></td></tr>
+  <tr><td><code>triangle</code></td><td>a triangle pointing up</td><td><modl-link src="n big triangle blue triangle">try it</modl-link></td></tr>
+  <tr><td><code>hex</code></td><td>a hexagon with flat top and bottom</td><td><modl-link src="n big hex blue hex">try it</modl-link></td></tr>
+  <tr><td><code>none</code></td><td>no outline: just the label, in the node's color</td><td><modl-link src="n big none blue none">try it</modl-link></td></tr>
+</table>
+<modl-example title="All six shapes" pos="circle:110,130 square:330,130 diamond:550,130 triangle:110,330 hex:330,330 none:550,330">
+circle   big circle blue
+square   big square blue
+diamond  big diamond blue
+triangle big triangle blue
+hex      big hex blue
+none     big none blue
+</modl-example>
+<p>
+  Edges stop at the outline of the shape they point to. A <code>none</code> node has no outline, so arrows run almost
+  to the middle of its label. That makes <code>none</code> best for free-floating captions and titles:
+</p>
+<modl-example title="Captions with none" pos="title:360,90 a:200,250 b:520,250 note:520,310">
+title big none white System overview
+note  small none gray (b is optional)
+a square blue Required
+b square purple Optional
+a -> b dashed
+</modl-example>
+
+<h2 id="line-styles">Line styles</h2>
+<table>
+  <tr><th>Style</th><th>Drawn as</th><th></th></tr>
+  <tr><td><code>solid</code></td><td>a continuous 2.2px line (the default)</td><td><modl-link src="a -> b solid blue" pos="a:160,200 b:460,200">try it</modl-link></td></tr>
+  <tr><td><code>dashed</code></td><td>long dashes</td><td><modl-link src="a -> b dashed blue" pos="a:160,200 b:460,200">try it</modl-link></td></tr>
+  <tr><td><code>dotted</code></td><td>round dots</td><td><modl-link src="a -> b dotted blue" pos="a:160,200 b:460,200">try it</modl-link></td></tr>
+  <tr><td><code>bold</code></td><td>a thicker, 3.5px solid line</td><td><modl-link src="a -> b bold blue" pos="a:160,200 b:460,200">try it</modl-link></td></tr>
+</table>
+<modl-example title="Line styles in a diagram" pos="app:360,80 cache:140,300 db:360,300 log:580,300">
+app -> db bold blue writes
+app -> cache dashed teal reads
+cache -> db dotted gray refill
+app -> log dashed orange async
+</modl-example>
+
+<h2 id="colors">Colors</h2>
+<p>
+  The same twelve colors work for nodes, edges and the <a href="structure.html#background">background</a>. On a node,
+  the color tints a translucent fill and draws the outline. On an edge, it colors the line and arrowhead. As a
+  background, it is used solid.
+</p>
+<table>
+  <tr><th>Color</th><th>Value</th><th></th><th></th></tr>
+  <tr><td><span class="swatch" style="background:#9aa4b2"></span><code>gray</code></td><td>#9aa4b2 (default)</td><td><modl-link src="a big circle gray gray\na -> b gray">node &amp; edge</modl-link></td><td><modl-link src="gray\na -> b">background</modl-link></td></tr>
+  <tr><td><span class="swatch" style="background:#1f2937"></span><code>black</code></td><td>#1f2937</td><td><modl-link src="a big circle black black\na -> b black">node &amp; edge</modl-link></td><td><modl-link src="black\na -> b">background</modl-link></td></tr>
+  <tr><td><span class="swatch" style="background:#f8fafc"></span><code>white</code></td><td>#f8fafc</td><td><modl-link src="a big circle white white\na -> b white">node &amp; edge</modl-link></td><td><modl-link src="white\na -> b">background</modl-link></td></tr>
+  <tr><td><span class="swatch" style="background:#ef4444"></span><code>red</code></td><td>#ef4444</td><td><modl-link src="a big circle red red\na -> b red">node &amp; edge</modl-link></td><td><modl-link src="red\na -> b">background</modl-link></td></tr>
+  <tr><td><span class="swatch" style="background:#f97316"></span><code>orange</code></td><td>#f97316</td><td><modl-link src="a big circle orange orange\na -> b orange">node &amp; edge</modl-link></td><td><modl-link src="orange\na -> b">background</modl-link></td></tr>
+  <tr><td><span class="swatch" style="background:#eab308"></span><code>yellow</code></td><td>#eab308</td><td><modl-link src="a big circle yellow yellow\na -> b yellow">node &amp; edge</modl-link></td><td><modl-link src="yellow\na -> b">background</modl-link></td></tr>
+  <tr><td><span class="swatch" style="background:#22c55e"></span><code>green</code></td><td>#22c55e</td><td><modl-link src="a big circle green green\na -> b green">node &amp; edge</modl-link></td><td><modl-link src="green\na -> b">background</modl-link></td></tr>
+  <tr><td><span class="swatch" style="background:#14b8a6"></span><code>teal</code></td><td>#14b8a6</td><td><modl-link src="a big circle teal teal\na -> b teal">node &amp; edge</modl-link></td><td><modl-link src="teal\na -> b">background</modl-link></td></tr>
+  <tr><td><span class="swatch" style="background:#3b82f6"></span><code>blue</code></td><td>#3b82f6</td><td><modl-link src="a big circle blue blue\na -> b blue">node &amp; edge</modl-link></td><td><modl-link src="blue\na -> b">background</modl-link></td></tr>
+  <tr><td><span class="swatch" style="background:#a855f7"></span><code>purple</code></td><td>#a855f7</td><td><modl-link src="a big circle purple purple\na -> b purple">node &amp; edge</modl-link></td><td><modl-link src="purple\na -> b">background</modl-link></td></tr>
+  <tr><td><span class="swatch" style="background:#ec4899"></span><code>pink</code></td><td>#ec4899</td><td><modl-link src="a big circle pink pink\na -> b pink">node &amp; edge</modl-link></td><td><modl-link src="pink\na -> b">background</modl-link></td></tr>
+  <tr><td><span class="swatch" style="background:#92400e"></span><code>brown</code></td><td>#92400e</td><td><modl-link src="a big circle brown brown\na -> b brown">node &amp; edge</modl-link></td><td><modl-link src="brown\na -> b">background</modl-link></td></tr>
+</table>
+<modl-example title="The whole palette" pos="gray:100,100 black:260,100 white:420,100 red:580,100 orange:100,250 yellow:260,250 green:420,250 teal:580,250 blue:100,400 purple:260,400 pink:420,400 brown:580,400">
+gray   square gray
+black  square black
+white  square white
+red    square red
+orange square orange
+yellow square yellow
+green  square green
+teal   square teal
+blue   square blue
+purple square purple
+pink   square pink
+brown  square brown
+gray -> black -> white -> red gray
+orange -> yellow -> green -> teal gray
+blue -> purple -> pink -> brown gray
+</modl-example>
+<p>
+  The palette nodes need a shape (or any attribute) because a line holding only a color name sets the background.
+</p>
+
+<h3 id="label-contrast">Label color and backgrounds</h3>
+<p>
+  A node's label color is chosen from the node's color alone. <code>white</code>, <code>yellow</code> and
+  <code>green</code> nodes get dark labels, and the other nine colors get light labels. The background isn't taken
+  into account, and node fills are mostly transparent, so:
+</p>
+<ul>
+  <li>On the default dark backdrop, or a <code>black</code> or other dark background, labels on <code>white</code>,
+    <code>yellow</code> and <code>green</code> nodes are hard to read. Use the other colors for nodes with labels.</li>
+  <li>On a <code>white</code> or other light background, it's the reverse: <code>white</code>, <code>yellow</code> and
+    <code>green</code> nodes read best.</li>
+  <li>Edge labels are always light text with a dark outline, so they read on any background.</li>
+  <li><code>none</code> nodes draw their label in the node's color, so pick a color that contrasts with the
+    background.</li>
+</ul>
+<div class="grid2">
+<modl-example title="Dark background: avoid white, yellow, green" pos="a:150,150 b:400,150 c:150,320 d:400,320">
+black
+a square blue Readable
+b square purple Readable
+c square yellow Hard to read
+d square green Hard to read
+a -> b
+c -> d
+</modl-example>
+<modl-example title="Light background: prefer white, yellow, green" pos="a:150,150 b:400,150 c:150,320 d:400,320">
+white
+a square yellow Readable
+b square green Readable
+c square blue Hard to read
+d square purple Hard to read
+a -> b black
+c -> d black
+</modl-example>
+</div>
