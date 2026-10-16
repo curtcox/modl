@@ -1,0 +1,25 @@
+name: Test deep zoom
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  browsers:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/build-docs.mjs --check
+      - run: npm install --no-save playwright
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Serve editor
+        run: python3 -m http.server 8001 > /tmp/modl-http.log 2>&1 &
+      - name: Deep zoom and saved positions
+        run: node tests/browser/deep-zoom.cjs http://localhost:8001/ ${{ matrix.browser }}
