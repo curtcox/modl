@@ -14,7 +14,8 @@ The pages in `docs/` are generated from the templates in `docs-src/` by `node sc
 `<modl-example>` block into a highlighted listing with an "Open in editor" link carrying the source in a `#h1=` URL.
 Edit the templates, run the script, and commit both; the deploy workflow fails if `docs/` is out of date.
 
-Diagrams can be saved to [HashBin](https://hashbin.org) (signing in with HashBin OAuth). A URL whose
+Diagrams can be saved to [HashBin](https://hashbin.org). Each save is approved on hashbin.org through HashBin Publish,
+so this page never holds a HashBin credential. A URL whose
 fragment is a [256t](https://256t.org) string, such as `https://curtcox.github.io/modl/#<256t string>`,
 loads that diagram from HashBin. The HashBin support is ported from
 [`diagram-oauth.html`](https://github.com/curtcox/hashbin.org/blob/main/scripts/reports/pages/diagram-oauth.html)
