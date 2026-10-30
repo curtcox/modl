@@ -53,3 +53,7 @@ reload. HashBin requests are blocked; it does not sign in or spend account funds
 Normal nodes at 0.001× are too small for reliable native mouse targeting; zoom in
 to edit them. Playwright Firefox may fail to launch on recent macOS with
 "Could not find profile folder"; CI runs all three engines on Ubuntu.
+
+## Canonical HashBin address
+
+The production app is [https://modl.hashbin.page/](https://modl.hashbin.page/). The GitHub Pages copy is kept for moving old drafts through **Move saved work** or **Download backup**. Transfers copy only this app's documents and public settings, keep the old copy, and never copy HashBin credentials or Python filesystem permissions. Deployment is managed by [HashBin's first-party deployment tool](https://github.com/curtcox/hashbin.org/blob/main/scripts/deploy-owned-apps.mjs).
