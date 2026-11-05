@@ -1,0 +1,62 @@
+{
+  "repo": "modl",
+  "commit": "bde3a23c0f5abf5fe2746c2233f347092d2a07e1",
+  "example": {
+    "id": "modl",
+    "source": "# Nodes: id [size] [shape] [color] [url] [text...]\neditor square blue Edit source\npreview circle green Preview diagram\nsaved diamond purple Save to HashBin\n\n# Edges: from -> to [size] [style] [color] [url] [text...]\neditor -> preview solid teal Render\npreview -> saved dashed purple Save\nsaved -> editor dotted orange Load\n",
+    "raw": "{\"src\":\"# Nodes: id [size] [shape] [color] [url] [text...]\\neditor square blue Edit source\\npreview circle green Preview diagram\\nsaved diamond purple Save to HashBin\\n\\n# Edges: from -> to [size] [style] [color] [url] [text...]\\neditor -> preview solid teal Render\\npreview -> saved dashed purple Save\\nsaved -> editor dotted orange Load\\n\",\"pos\":{\"a\":[120,80]}}",
+    "expected": {
+      "src": "# Nodes: id [size] [shape] [color] [url] [text...]\neditor square blue Edit source\npreview circle green Preview diagram\nsaved diamond purple Save to HashBin\n\n# Edges: from -> to [size] [style] [color] [url] [text...]\neditor -> preview solid teal Render\npreview -> saved dashed purple Save\nsaved -> editor dotted orange Load\n",
+      "pos": {
+        "a": [
+          120,
+          80
+        ]
+      }
+    }
+  },
+  "cases": [
+    {
+      "label": "source fragment",
+      "href": "https://curtcox.github.io/modl/#%23%20Nodes%3A%20id%20%5Bsize%5D%20%5Bshape%5D%20%5Bcolor%5D%20%5Burl%5D%20%5Btext...%5D%0Aeditor%20square%20blue%20Edit%20source%0Apreview%20circle%20green%20Preview%20diagram%0Asaved%20diamond%20purple%20Save%20to%20HashBin%0A%0A%23%20Edges%3A%20from%20-%3E%20to%20%5Bsize%5D%20%5Bstyle%5D%20%5Bcolor%5D%20%5Burl%5D%20%5Btext...%5D%0Aeditor%20-%3E%20preview%20solid%20teal%20Render%0Apreview%20-%3E%20saved%20dashed%20purple%20Save%0Asaved%20-%3E%20editor%20dotted%20orange%20Load%0A",
+      "kind": "source",
+      "src": "# Nodes: id [size] [shape] [color] [url] [text...]\neditor square blue Edit source\npreview circle green Preview diagram\nsaved diamond purple Save to HashBin\n\n# Edges: from -> to [size] [style] [color] [url] [text...]\neditor -> preview solid teal Render\npreview -> saved dashed purple Save\nsaved -> editor dotted orange Load\n"
+    },
+    {
+      "label": "compressed query",
+      "href": "https://curtcox.github.io/modl/?compressed=MQAgcg9gJgpgzgLhASyiA2nZAvGBdDOACwEMAHfDAYwgBsIAnA9AVwduYBcYAPTgOkF4AUDCjJOjEHACOLEgxggARrRZKAouM7SIbKjGFlFAN2QwA7iCrIGVWkoDmimADsQABVPmr4ks5IAW2E4EhMxED9AiFc0MjYyBxAAZTClSRAACRJiACFkV2FhUC1HeCQAMwYIQJAAWgA+EAzMHEpMTgBPB2YaeiYMNg4Mbj5BfhExCSlGkGMYM0tdWlRmmBJaEAAlN1gGI28l2dDwtCgcogj4hkSlVPCQtLRZqckGSIhObjRGElcykAAGQgJCgwiAA",
+      "kind": "source",
+      "src": "# Nodes: id [size] [shape] [color] [url] [text...]\neditor square blue Edit source\npreview circle green Preview diagram\nsaved diamond purple Save to HashBin\n\n# Edges: from -> to [size] [style] [color] [url] [text...]\neditor -> preview solid teal Render\npreview -> saved dashed purple Save\nsaved -> editor dotted orange Load\n"
+    },
+    {
+      "label": "document query",
+      "href": "https://curtcox.github.io/modl/?doc=N4IgzgTgxiBcIGIAEA5A9gEwKZlkglhkgNpj4BeWAuiWABYCGADtSVGgDZoQ3ECuEDrwAuWAB7CAdNKoAdAHZYM+YdyRgAjnwYQsSAEYc+egKLLh6tAKhYFTXQDd8WAO5Io+aBz0BzXVnkkAAVHZzdlBj8GAFsFMAYHJSQI6LR5IiYBJm8kAGUEvVUkAAkGegAhfHkFBWQzHxw8ADMINGikAFoAPiQi0gpWUmEAT29edi4eEgEhElEJaUk5RXM1bqR7LCdXSw5CXqwGDiQAJQDsCDtQnfX4xKIMMrokzIhsvXzEuIKidaUVNQYNDCUREbgMeQNJAAGTQDAwChAABoQEw0GA4KAGHBiABGABMAAYkQAOQlUAC+FKAA",
+      "kind": "source",
+      "raw": "{\"src\":\"# Nodes: id [size] [shape] [color] [url] [text...]\\neditor square blue Edit source\\npreview circle green Preview diagram\\nsaved diamond purple Save to HashBin\\n\\n# Edges: from -> to [size] [style] [color] [url] [text...]\\neditor -> preview solid teal Render\\npreview -> saved dashed purple Save\\nsaved -> editor dotted orange Load\\n\",\"pos\":{\"a\":[120,80]}}"
+    },
+    {
+      "label": "document fragment",
+      "href": "https://curtcox.github.io/modl/#%7B%22src%22%3A%22%23%20Nodes%3A%20id%20%5Bsize%5D%20%5Bshape%5D%20%5Bcolor%5D%20%5Burl%5D%20%5Btext...%5D%5Cneditor%20square%20blue%20Edit%20source%5Cnpreview%20circle%20green%20Preview%20diagram%5Cnsaved%20diamond%20purple%20Save%20to%20HashBin%5Cn%5Cn%23%20Edges%3A%20from%20-%3E%20to%20%5Bsize%5D%20%5Bstyle%5D%20%5Bcolor%5D%20%5Burl%5D%20%5Btext...%5D%5Cneditor%20-%3E%20preview%20solid%20teal%20Render%5Cnpreview%20-%3E%20saved%20dashed%20purple%20Save%5Cnsaved%20-%3E%20editor%20dotted%20orange%20Load%5Cn%22%2C%22pos%22%3A%7B%22a%22%3A%5B120%2C80%5D%7D%7D",
+      "kind": "source",
+      "raw": "{\"src\":\"# Nodes: id [size] [shape] [color] [url] [text...]\\neditor square blue Edit source\\npreview circle green Preview diagram\\nsaved diamond purple Save to HashBin\\n\\n# Edges: from -> to [size] [style] [color] [url] [text...]\\neditor -> preview solid teal Render\\npreview -> saved dashed purple Save\\nsaved -> editor dotted orange Load\\n\",\"pos\":{\"a\":[120,80]}}"
+    },
+    {
+      "label": "example",
+      "href": "https://curtcox.github.io/modl/?example=modl",
+      "kind": "example",
+      "id": "modl"
+    },
+    {
+      "label": "CID",
+      "href": "https://curtcox.github.io/modl/#AAAAAAFDieSZaENUZtennUw3fvvouJh4h5qdoS8yXMLs4Ozop8Qq3k_bOpTdVYKkZHxJ5ez-W_JYtXenZHjmbfPFaLTeVQ",
+      "kind": "cid",
+      "cid": "AAAAAAFDieSZaENUZtennUw3fvvouJh4h5qdoS8yXMLs4Ozop8Qq3k_bOpTdVYKkZHxJ5ez-W_JYtXenZHjmbfPFaLTeVQ"
+    },
+    {
+      "label": "h1 positions",
+      "href": "https://curtcox.github.io/modl/#h1=eyJzcmMiOiIjIE5vZGVzOiBpZCBbc2l6ZV0gW3NoYXBlXSBbY29sb3JdIFt1cmxdIFt0ZXh0Li4uXVxuZWRpdG9yIHNxdWFyZSBibHVlIEVkaXQgc291cmNlXG5wcmV2aWV3IGNpcmNsZSBncmVlbiBQcmV2aWV3IGRpYWdyYW1cbnNhdmVkIGRpYW1vbmQgcHVycGxlIFNhdmUgdG8gSGFzaEJpblxuXG4jIEVkZ2VzOiBmcm9tIC0-IHRvIFtzaXplXSBbc3R5bGVdIFtjb2xvcl0gW3VybF0gW3RleHQuLi5dXG5lZGl0b3IgLT4gcHJldmlldyBzb2xpZCB0ZWFsIFJlbmRlclxucHJldmlldyAtPiBzYXZlZCBkYXNoZWQgcHVycGxlIFNhdmVcbnNhdmVkIC0-IGVkaXRvciBkb3R0ZWQgb3JhbmdlIExvYWRcbiIsInBvcyI6eyJhIjpbMTIwLDgwXX19",
+      "kind": "source",
+      "raw": "{\"src\":\"# Nodes: id [size] [shape] [color] [url] [text...]\\neditor square blue Edit source\\npreview circle green Preview diagram\\nsaved diamond purple Save to HashBin\\n\\n# Edges: from -> to [size] [style] [color] [url] [text...]\\neditor -> preview solid teal Render\\npreview -> saved dashed purple Save\\nsaved -> editor dotted orange Load\\n\",\"pos\":{\"a\":[120,80]}}"
+    }
+  ]
+}

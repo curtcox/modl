@@ -1,0 +1,59 @@
+{
+  "dependencies": {
+    "js/editor.js": "ee2f600ba250d96e28ec74e1d2dff673082166a1da8f09dca3004e6a66ed4e80",
+    "js/fragment-config.js": "ee0dbd58eb2a52589b7e43002728e43967bad44d9cf5c3c444c021856354ba83",
+    "js/gallery-catalog.js": "b8abacf2ccabd8d46f218d2a08b2c79ad178076d3efe73cd2ab270d132120d72",
+    "engine-integrity.json": "26274edf5ca6c5c78c8b9d1e0dc6a703de9580c8b46793cce46e3cb4e3a466e5"
+  },
+  "renderer": "79ab97f367ed4c9e092b4f96b8c893acba96a2e4c3678b35c4adf87725c42953",
+  "examples": {
+    "diagram-1": {
+      "document": "76ae0761a88da430177cd1a80ead63b39b7994f56d4d0a40bfed0bb506fa35df",
+      "cover": "75da33fb3eaf0a7800f59140e63e17551ea49e866e10ac97e4bcf5ca7def56c2"
+    },
+    "diagram-2": {
+      "document": "775f6213aac093a465fd59e50a1c46c4dc4d0ee71d9fa9423891492cb097dd47",
+      "cover": "de3fd31f0f4e6593fb4369410e0f6bf53d391df0cc049e4896f46eb7eae197e6"
+    },
+    "diagram-3": {
+      "document": "1931e3a45b9aec83a8a5e7a1684937477b2d9d7578d4037fecf9dcc7e3db83a3",
+      "cover": "c8617027ba55e9e64586805335a4165a51e197defa78e9ee7493240f92f1a678"
+    },
+    "diagram-4": {
+      "document": "3d160e5693b97a5e16bdcfe9139eb5ca4944a9724afb99beaa468e070ba7b31b",
+      "cover": "5fd5634820c1ec773fcd7c992c8ae9594c320f419d638fc70fd3cab577eb2713"
+    },
+    "diagram-5": {
+      "document": "594ce8d3053debb9ec4c40c7b5c72bfe1a0b6588c7d0bc5fde8a5e026443d32f",
+      "cover": "48909b0d57eee4ce5265fd6e5c11636020d3b55a77d17154bf3a43cb6a61c329"
+    },
+    "diagram-6": {
+      "document": "3a6ceac85f543ebd725dcd1506f2f93385a2297e2afefc527f95c6af179b7283",
+      "cover": "55c5cecb90312863742b048c795f8646dfe452a757b72ad146b1434d81f30fdb"
+    },
+    "diagram-7": {
+      "document": "f28c273cb80680ebe6b6cff6c960abf8eecac889a7ef9a271745b3dbc63307aa",
+      "cover": "0f2c23c092434e67078071144879c2c3b56802cdc2cbd4c10c9702616b61bd47"
+    },
+    "diagram-8": {
+      "document": "896ea9fbea1876b3fa1569d2a58a317cb0bc71e362322e1950e464d5eeadafda",
+      "cover": "a9cd129a6cf2717023e541a9c3344f41a1d9828a36e8c38edfa18224abf63cb0"
+    },
+    "diagram-9": {
+      "document": "78c3647afe05f8000545f148061e91dcc6b3221befea81c65804f2c8cd2f9e68",
+      "cover": "889a27dd4edb6cd0089bc92ef0826b2fdbff986bdb6a0ee1998b95b033f079ed"
+    },
+    "diagram-10": {
+      "document": "cd11eee75cad6139202a9ab6e4b483e7679285c5923d19eeb01ebfcaf999769c",
+      "cover": "082f3df61f330e258f3d0a7dcf70375226090b8584f14b4c01cc79cb50bc71d4"
+    },
+    "diagram-11": {
+      "document": "bf8eb4148e2544e3f6a299ed19dc317ab1581b9059159d12c75d392c8d3e8ab4",
+      "cover": "ff8d5a3e647ad27388c7c4aff12ebec92a8d39a0908a1b44851084fc6e80c294"
+    },
+    "diagram-12": {
+      "document": "cc3bd137a9148b2653442bac471bf225df0827928b964888b9501016a374d6cd",
+      "cover": "a4233f42abfd2abb4c95f4f4dec810ad35229d83a89978cd9329f280d30f5376"
+    }
+  }
+}
