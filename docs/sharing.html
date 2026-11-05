@@ -52,7 +52,7 @@
 <p>
   The JSON is UTF-8 encoded and then base64url encoded (<code>-</code> and <code>_</code> instead of <code>+</code> and
   <code>/</code>, with no <code>=</code> padding), and prefixed with <code>h1=</code>. Every example link in these docs is
-  built this way. <b>Copy URL</b> in the editor copies the current link, and <b>Commit snapshot</b> adds it to the
+  built this way. <b>Share</b> in the editor opens the current link for copying, and <b>Commit snapshot</b> adds it to the
   browser history so Back and Forward step between versions.
 </p>
 
@@ -60,7 +60,7 @@
 <p>
   Coordinates are measured in pixels from the top-left corner of the diagram canvas, before any panning or zooming.
   The editor rounds them to whole numbers when you drag. Zoom, pan and the current view (Source, Diagram, Help,
-  Split) are not saved.
+  Split) can be included in new links. Older links keep their original Split default.
 </p>
 <p>
   Nodes without a position are placed automatically, spread evenly around a circle in the middle of the canvas, in
@@ -144,6 +144,17 @@ def modl_url(src, pos=None):
   <li><a class="try" href="../#AAAAAAAtaHViIGJpZyBoZXggcHVycGxlCmh1YiAtPiBhCmh1YiAtPiBiCmh1YiAtPiBj">a hub with three spokes</a></li>
   <li><a class="try" href="../#AAAAAAAkcmVkCndhcm4gYmlnIHRyaWFuZ2xlIHllbGxvdyBXYXJuaW5n">a warning sign on red</a></li>
 </ul>
+
+<h2>Shared tools</h2>
+<p>Use Share to copy or shorten a link and choose whether a diagram renders on open.
+QR creates a code, scans with your camera after permission, or loads an uploaded,
+pasted or dropped QR image. Large diagrams can be saved to HashBin for a shorter code.</p>
+<p>More includes HashBin load/save, draft recovery and Download diagram / Open diagram
+file. Explicit links always load their document and leave earlier drafts available.
+On phones, Code and Preview tabs keep each pane usable. Docs and Gallery stay in More.</p>
+<p>The local app and docs are available offline after verification. More offers Repair
+offline copy and, when a verified update is waiting, Update and reload. Image nodes
+hosted elsewhere remain dependent on their original server.</p>
     <nav class="pager">
       <a class="prev" href="links.html">← Links &amp; image nodes</a>
       <a class="next" href="gotchas.html">Gotchas →</a>

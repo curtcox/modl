@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <!-- Scripts come only from this site's files and the pinned HashBin SDK (or a local HashBin server under
        ?api=); HashBin saving runs in hashbin.org's own window. -->
   <meta http-equiv="Content-Security-Policy" content="script-src 'self' https://hashbin.org/sdk/v0.4.0/ http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'" />
@@ -11,7 +11,11 @@
        which saves diagrams on hashbin.org (each save approved there through HashBin Publish) and loads them back
        by 256t CID.
        Here a URL fragment that is a valid 256t string (#<cid>) loads that diagram. -->
-  <title>Diagram Editor</title>
+  <meta name="hashbin-client-id" content="app_1fe78cf6-21fc-4491-abc9-e0aefca53505">
+  <meta name="fragment-kit-release" content="modl-fragment-kit-v0.3.4">
+  <meta name="theme-color" content="#12161c"><link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="vendor/fragment-kit-v0.3.4/src/ui/kit.css">
+  <title>MODL — Manual Override Diagram Language</title>
   <style>
     :root {
       --bg: #0b0d10;
@@ -256,7 +260,7 @@
     dialog dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 12px 0 0; font-size: 13px; }
     dialog dt { color: var(--muted); }
     dialog dd { margin: 0; }
-  </style>
+  </style><link rel="stylesheet" href="js/fragment-ui.css">
 </head>
 <body>
 <div class="app">
@@ -442,7 +446,7 @@
   </form>
 </dialog>
 
-<script src="js/qr.js"></script>
+
 
 <script type="module" src="js/editor.js"></script>
 <script type="module" src="js/domain-migration.js"></script>

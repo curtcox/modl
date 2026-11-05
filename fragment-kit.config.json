@@ -1,0 +1,12 @@
+{
+  "slug": "modl",
+  "name": "MODL",
+  "storagePrefix": "modl",
+  "canonicalOrigin": "https://modl.hashbin.page/",
+  "recoveryOrigin": "https://curtcox.github.io/modl/",
+  "repo": "curtcox/modl",
+  "docs": "https://modl.hashbin.page/docs/",
+  "gallery": "https://modl.hashbin.page/gallery.html",
+  "documentType": "modl",
+  "hashbinClientId": "app_1fe78cf6-21fc-4491-abc9-e0aefca53505"
+}

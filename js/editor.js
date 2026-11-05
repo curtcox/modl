@@ -1,105 +1,24 @@
-// -----------------------------
-// HashBin saving (runs before the editor boots so a save that redirected restores the diagram first)
-// -----------------------------
-// The public client ID of this editor's app registered on hashbin.org with the redirect URI
-// https://curtcox.github.io/modl/. It isn't a secret: hashbin.org only returns saves to the registered
-// address. Empty means saving isn't set up yet; loading still works.
-const CLIENT_ID = "app_1fe78cf6-21fc-4491-abc9-e0aefca53505";
+import{config,type,fromDocument,serializeLegacy,encodeState,urlState,documents,HashBinStore}from'./fragment-config.js';
+import{LocalDrafts,createStorage,HashBinPanel,createShell,mountMobileTabs,createShareDialog,createQrDialog,OfflineClient}from'../vendor/fragment-kit-v0.3.4/src/index.js';
+function optionalStorage(kind){try{return globalThis[kind];}catch{return undefined;}}
+function localOverride(name,fallback){const value=new URL(location.href).searchParams.get(name);try{const url=new URL(value);if(url.protocol==='http:'&&['localhost','127.0.0.1'].includes(url.hostname))return url.origin;}catch{}return fallback;}
+const API_BASE=localOverride('api','https://hashbin.org'),CONTENT_BASE=localOverride('content','https://256t.us'),IS_LOCAL_API=API_BASE!=='https://hashbin.org';
+const clientId=IS_LOCAL_API?new URL(location.href).searchParams.get('client_id')||config.hashbinClientId:config.hashbinClientId;
+const callback=new URL(location.href);callback.hash='';callback.pathname=callback.pathname.replace(/index\.html$/,'');for(const key of [...callback.searchParams.keys()])if(!IS_LOCAL_API||!['api','content','client_id'].includes(key))callback.searchParams.delete(key);
+const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:optionalStorage('localStorage'),apiBase:API_BASE,contentBase:CONTENT_BASE,...IS_LOCAL_API?{loadSDK:()=>import(API_BASE+'/sdk/v0.4.0/hashbin.js'),fetchSource:(url,options)=>fetch(url.replace('https://256t.us/',CONTENT_BASE+'/'),options)}:{}});
+(async()=>{
+ const originalHeader=document.querySelector('.topbar');
+ const shell=createShell({config,container:document.querySelector('.app')});
+ const renderButton=document.createElement('button');renderButton.id='render';renderButton.textContent='Render';
+ const shareButton=document.getElementById('btnCopy'),qrButton=document.getElementById('btnQr');shareButton.textContent='Share';qrButton.textContent='QR';
+ shell.toolbar.append(renderButton,shareButton,qrButton);
+ for(const id of ['btnViewSource','btnViewDiagram','btnViewHelp','btnViewSplit','btnCommit','btnReset'])shell.drawer.body.append(document.getElementById(id));
+ shell.status.append(originalHeader.querySelector('.status'));originalHeader.remove();
+ document.getElementById('saveDialog').remove();document.getElementById('qrDialog').remove();
+ shell.header.querySelector('.fk-more').id='more-toggle';
+ const drafts=new LocalDrafts({storage:createStorage({prefix:config.storagePrefix}),key:'draft',serialize:value=>JSON.stringify(fromDocument(value)),parse:text=>type.normalize(JSON.parse(text))});
+ let initialized=false,autoRun=true,viewMode='split',mobileTabs,navigationRevision=0,lastNavigation,qrSave=false,gestureFingerprint;
 
-// ?api=, ?content= and ?client_id= point the page at a local dev server for testing. Only localhost is
-// accepted, so a crafted link can't send someone's saves anywhere but hashbin.org.
-function localOverride(name, fallback) {
-  const value = new URLSearchParams(location.search).get(name);
-  if (!value) return fallback;
-  try {
-    const url = new URL(value);
-    if (url.protocol === "http:" && ["localhost", "127.0.0.1"].includes(url.hostname)) return url.origin;
-  } catch {
-    // fall through to the default
-  }
-  return fallback;
-}
-const API_BASE = localOverride("api", "https://hashbin.org");
-const CONTENT_BASE = localOverride("content", "https://256t.us");
-const IS_LOCAL_API = API_BASE !== "https://hashbin.org";
-const clientId = (IS_LOCAL_API && new URLSearchParams(location.search).get("client_id")) || CLIENT_ID;
-
-// Loaded dynamically so the editor still works (without saving) when hashbin.org can't be reached
-let HashBinClient = null;
-if (clientId) {
-  try {
-    ({ HashBinClient } = await import(`${API_BASE}/sdk/v0.4.0/hashbin.js`));
-  } catch {
-    // saveProblem explains this to the user
-  }
-}
-const saveProblem = !clientId ? "HashBin saving isn't set up for this page yet"
-  : !HashBinClient ? "Couldn't load HashBin saving from hashbin.org; reload to try again"
-  : null;
-
-// hashbin.org returns to exactly this address, so it keeps only the testing overrides from the query.
-// /modl/index.html and /modl/ are the same page; only the latter is registered.
-function redirectUri() {
-  const params = new URLSearchParams();
-  const current = new URLSearchParams(location.search);
-  if (IS_LOCAL_API) {
-    for (const name of ["api", "content", "client_id"]) {
-      if (current.get(name)) params.set(name, current.get(name));
-    }
-  }
-  const query = params.toString();
-  return location.origin + location.pathname.replace(/index\.html$/, "") + (query ? `?${query}` : "");
-}
-
-function storage(kind) {
-  try { return window[kind]; } catch { return null; }
-}
-
-// Each save is approved on hashbin.org (HashBin Publish), so this page, on the github.io origin it shares
-// with every other project there, never holds a HashBin credential.
-const hb = !saveProblem
-  ? new HashBinClient({
-      clientId,
-      redirectUri: redirectUri(),
-      baseUrl: API_BASE,
-      contentBaseUrl: CONTENT_BASE,
-      storage: storage("localStorage"),
-      transactionStorage: storage("sessionStorage"),
-    })
-  : null;
-
-function publishMessage(error) {
-  if (error.message === "access_denied") return "The save was cancelled on HashBin.";
-  if (error.message === "Publish window closed.") return "The HashBin window was closed before the save was approved.";
-  return `Couldn't save to HashBin: ${error.message}`;
-}
-
-// Handles #hashbin_publish=… on the way back from a save that redirected (popups blocked), and puts back
-// the diagram's URL from before the trip
-async function completeRedirectSave() {
-  if (!hb || !new URLSearchParams(location.hash.slice(1)).has("hashbin_publish")) return null;
-  let result;
-  try {
-    const { cid, clientState } = await hb.handlePublishCallback({ hash: location.hash });
-    result = { cid, ...clientState };
-  } catch (error) {
-    result = { error: publishMessage(error), ...error.clientState };
-  }
-  history.replaceState(null, "", redirectUri() + (result.hash || ""));
-  return result;
-}
-
-// Earlier versions kept an OAuth sign-in in this origin's storage. Revoke it on hashbin.org, since clearing
-// it alone would leave a copy another page took still valid. A failed revoke is retried on the next visit.
-async function retireLegacySignIn() {
-  if (!hb?.getTokens()?.refreshToken) return;
-  try { await hb.disconnect(); } catch { /* retried on the next load */ }
-}
-
-const publishReturn = await completeRedirectSave();
-retireLegacySignIn();
-
-(() => {
   // -----------------------------
   // Reserved vocab
   // -----------------------------
@@ -246,7 +165,8 @@ retireLegacySignIn();
     li.appendChild(label);
   });
 
-  function setViewMode(mode) {
+  function setViewMode(mode,persist=false) {
+    mode=['source','diagram','help'].includes(mode)?mode:'split';viewMode=mode;
     $app.classList.remove("mode-source", "mode-diagram", "mode-help");
     if (mode === "source") $app.classList.add("mode-source");
     if (mode === "diagram") $app.classList.add("mode-diagram");
@@ -262,291 +182,77 @@ retireLegacySignIn();
     $btnViewDiagram.setAttribute("aria-pressed", String(is("diagram")));
     $btnViewHelp.setAttribute("aria-pressed", String(is("help")));
     $btnViewSplit.setAttribute("aria-pressed", String(is("split")));
+    mobileTabs?.select(mode==='diagram'?1:0);
+    if(persist&&initialized){drafts.attempt(snapshotState(),true);syncHash();shell.drawer.dialog.close();}
   }
 
-  $btnViewSource.addEventListener("click", () => setViewMode("source"));
-  $btnViewDiagram.addEventListener("click", () => setViewMode("diagram"));
-  $btnViewHelp.addEventListener("click", () => setViewMode("help"));
-  $btnViewSplit.addEventListener("click", () => setViewMode("split"));
+  $btnViewSource.addEventListener("click", () => setViewMode("source",true));
+  $btnViewDiagram.addEventListener("click", () => setViewMode("diagram",true));
+  $btnViewHelp.addEventListener("click", () => setViewMode("help",true));
+  $btnViewSplit.addEventListener("click", () => setViewMode("split",true));
 
-  setViewMode("split");
+  setViewMode("split",true);
 
-  document.getElementById("btnCopy").addEventListener("click", async () => {
-    try {
-      await navigator.clipboard.writeText(location.href);
-      flashStatus("Copied URL", "ok");
-    } catch {
-      // Fallback
-      const tmp = document.createElement("textarea");
-      tmp.value = location.href;
-      document.body.appendChild(tmp);
-      tmp.select();
-      document.execCommand("copy");
-      document.body.removeChild(tmp);
-      flashStatus("Copied URL (fallback)", "ok");
-    }
+  let saved=null;
+  const savePayload=serializeLegacy;
+  const cidFromHash=hash=>store.cid(hash);
+  const stateFromContent=documents.parse;
+  function showLoadError(message){$errorBox.classList.add('show');$errorBox.textContent=message;$parseStatus.textContent='Load failed';$parseStatus.className='err';panel.status.textContent=message;}
+  function snapshotState({flush=false}={}){
+   if(flush)clearTimeout(parseTimer);
+   if(flush&&autoRun&&state.src!==$src.value){state=fromDocument(type.normalize({src:$src.value,pos:state.pos,autorun:autoRun,view:viewMode}));renderAll();}
+   return fromDocument(type.normalize({src:$src.value,pos:state.pos,autorun:autoRun,view:viewMode}));
+  }
+  const fingerprint=()=>JSON.stringify({src:$src.value,pos:state.pos,autorun:autoRun,view:viewMode});
+  function updateSavedState(){
+   $savedState.textContent='Not saved';$savedState.className='savedState';if(!saved)return;
+   let dirty=true;try{dirty=savePayload(snapshotState())!==saved.payload;}catch{}
+   const link=document.createElement('a');link.href=CONTENT_BASE+'/'+saved.cid;link.target='_blank';link.rel='noopener noreferrer';link.textContent=saved.cid.slice(0,8)+'…'+saved.cid.slice(-6);link.title=saved.cid;
+   $savedState.className=dirty?'savedState dirty':'savedState';$savedState.replaceChildren(document.createTextNode(dirty?'Unsaved changes since ':'Saved as '),link);
+  }
+  function updateHashStatus(){$hashStatus.textContent='hash: '+location.hash.length+' chars';}
+  function syncHash({replace=true}={}){
+   try{
+    const snapshot=snapshotState(),payload=savePayload(snapshot);
+    if(gestureFingerprint&&payload!==gestureFingerprint)drafts.attempt(snapshot,true);else drafts.attempt(snapshot);
+    let href=urlState.build(snapshot,{url:location.href,run:autoRun,view:viewMode==='split'?undefined:viewMode}).href;
+    if(saved&&payload===saved.payload)href=urlState.link(href,saved.cid);
+    if(replace)history.replaceState(null,'',href);else history.pushState(null,'',href);
+    lastNavigation=location.href;updateHashStatus();updateSavedState();
+   }catch(error){showLoadError(error.message);}
+  }
+  function cancelInteractions(){
+   clearTimeout(parseTimer);clearTimeout(dragHashTimer);if(dragRaf){cancelAnimationFrame(dragRaf);dragRaf=0;}
+   const pointer=dragging?.pointerId??panning?.pointerId;dragging=null;panning=null;gestureFingerprint=null;
+   if(pointer!==undefined)try{$svg.releasePointerCapture(pointer);}catch{}$svgWrap.classList.remove('panning');
+  }
+  function applyDocument(value,cid=null,options={}){
+   const doc=type.normalize(value);autoRun=options.run??doc.modl.autorun;
+   setViewMode(options.view??doc.modl.view);
+   applyState(fromDocument(doc),{fromHash:true});
+   if(autoRun)renderAll();else{$svg.replaceChildren();diagram=null;$parseStatus.textContent='Press Render';}
+   saved=cid?{cid,payload:savePayload(snapshotState())}:null;updateSavedState();
+  }
+  const pendingOptions=new Map();
+  const panel=new HashBinPanel({store,urlState,container:shell.drawer.body,getSnapshot:()=>snapshotState({flush:true}),getFingerprint:fingerprint,
+   onLoad:(doc,cid)=>{drafts.opened();cancelInteractions();applyDocument(doc,cid,pendingOptions.get(cid));syncHash();shell.drawer.dialog.close();},
+   onSaved:cid=>{saved={cid,payload:savePayload(snapshotState())};syncHash({replace:false});if(qrSave){qrSave=false;panel.dialog.close();qr.open(urlState.link(location.href,cid));}}
   });
-
-  // -----------------------------
-  // QR code of this page's URL, so an audience can open the diagram on their phones
-  // -----------------------------
-  const $qrDialog = document.getElementById("qrDialog");
-  const $qrCode = document.getElementById("qrCode");
-  const $qrMessage = document.getElementById("qrMessage");
-  const $qrUrl = document.getElementById("qrUrl");
-
-  // Past version 20 (97×97 modules, about 850 characters) phone cameras struggle at a distance
-  const QR_COMFORTABLE_VERSION = 20;
-  let qrShownFor = null;
-
-  function qrSvg(qr) {
-    const border = 4;
-    const dim = qr.size + border * 2;
-    let path = "";
-    for (let y = 0; y < qr.size; y++) {
-      for (let x = 0; x < qr.size; x++) {
-        if (qr.modules[y][x]) path += `M${x + border},${y + border}h1v1h-1z`;
-      }
-    }
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${dim} ${dim}" shape-rendering="crispEdges" role="img" aria-label="QR code of this page's URL"><rect width="${dim}" height="${dim}" fill="#fff"/><path d="${path}" fill="#000"/></svg>`;
-  }
-
-  // Redraws while the dialog is open, so the code always matches the URL
-  function refreshQr() {
-    if (!$qrDialog.open || qrShownFor === location.href) return;
-    const url = location.href;
-    qrShownFor = url;
-    const qr = encodeQr(url);
-    const notes = [];
-    const local = location.protocol === "file:" || ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname);
-    if (local) notes.push("This page is on this computer, so phones won't be able to open the link.");
-    if (!qr) {
-      notes.push(`This URL is ${url.length} characters, too long for a QR code. Save to HashBin for a short link.`);
-    } else if (qr.version > QR_COMFORTABLE_VERSION) {
-      notes.push(`This URL is ${url.length} characters, so the code is dense and may be hard to scan from a distance. Save to HashBin for a short link.`);
-    }
-    $qrCode.innerHTML = qr ? qrSvg(qr) : "";
-    $qrMessage.textContent = notes.join("\n");
-    $qrMessage.className = (qr ? "saveMessage warn" : "saveMessage err");
-    $qrUrl.textContent = url.length > 100 ? `${url.slice(0, 70)}…${url.slice(-20)}` : url;
-    $qrUrl.title = url;
-  }
-
-  document.getElementById("btnQr").addEventListener("click", () => {
-    qrShownFor = null;
-    $qrDialog.showModal();
-    refreshQr();
-  });
-
-  document.getElementById("btnReset").addEventListener("click", () => {
-    saved = null;
-    applyState(makeDefaultState(), { replace: true });
-    renderAll();
-    syncHash({ replace: true });
-  });
-
-  document.getElementById("btnCommit").addEventListener("click", () => {
-    syncHash({ replace: false }); // pushState for milestone
-    flashStatus("Committed snapshot", "ok");
-  });
-
-  function flashStatus(text, kind) {
-    const prev = $parseStatus.textContent;
-    const prevClass = $parseStatus.className;
-    $parseStatus.textContent = text;
-    $parseStatus.className = (kind === "err") ? "err" : (kind === "warn") ? "warn" : "ok";
-    setTimeout(() => {
-      $parseStatus.textContent = prev;
-      $parseStatus.className = prevClass;
-    }, 900);
-  }
-
-  // -----------------------------
-  // Hash state encoding (all state in URL fragment)
-  // -----------------------------
-  // State = { src: string, pos: { [nodeId]: [x,y] } }
-  const HASH_PREFIX = "h1=";
-
-  function bytesToBase64Url(bytes) {
-    let bin = "";
-    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-    const b64 = btoa(bin);
-    return b64.replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
-  }
-
-  function base64UrlToBytes(b64url) {
-    const padLen = (4 - (b64url.length % 4)) % 4;
-    const b64 = (b64url + "====".slice(0, padLen)).replaceAll("-", "+").replaceAll("_", "/");
-    const bin = atob(b64);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    return bytes;
-  }
-
-  function encodeState(state) {
-    const json = JSON.stringify(state);
-    const bytes = new TextEncoder().encode(json);
-    return HASH_PREFIX + bytesToBase64Url(bytes);
-    // Note: for very large diagrams you may want compression,
-    // but this keeps the file dependency-free.
-  }
-
-  function decodeState(hash) {
-    // Expect: #h1=...
-    const raw = (hash.startsWith("#") ? hash.slice(1) : hash).trim();
-    if (!raw) return null;
-    if (!raw.startsWith(HASH_PREFIX)) return null;
-    const payload = raw.slice(HASH_PREFIX.length);
-    const bytes = base64UrlToBytes(payload);
-    const json = new TextDecoder().decode(bytes);
-    return JSON.parse(json);
-  }
-
-  // -----------------------------
-  // HashBin storage: a URL fragment that is a 256t string (#<cid>) names a saved diagram on 256t.us
-  // -----------------------------
-
-  // Content at or below this size is stored inside its CID and costs nothing (src/utils/hash256t.js)
-  const INLINE_CONTENT_THRESHOLD = 64;
-
-  // The CID of the last save or load, and the diagram it holds in savePayload form
-  let saved = null; // { cid, payload }
-
-  // Canonical JSON (sorted positions) so an unchanged diagram always produces the same bytes and CID
-  function savePayload(st) {
-    const pos = {};
-    for (const id of Object.keys(st.pos).sort()) pos[id] = st.pos[id];
-    return JSON.stringify({ format: "hashbin-diagram", version: 1, src: st.src, pos });
-  }
-
-  // A 256t string (https://256t.org) is base64url: 8 characters holding the content's length in bytes,
-  // then the content itself if that's at most 64 bytes, or else its SHA-512 hash (always 86 characters)
-  function cidContentLength(cid) {
-    return base64UrlToBytes(cid.slice(0, 8)).reduce((total, byte) => total * 256 + byte, 0);
-  }
-
-  function isValid256t(s) {
-    if (!/^[A-Za-z0-9_-]{8,94}$/.test(s)) return false;
-    const length = cidContentLength(s);
-    const expectedRest = (length <= INLINE_CONTENT_THRESHOLD) ? Math.ceil((length * 4) / 3) : 86;
-    return s.length - 8 === expectedRest;
-  }
-
-  // Any other fragment (such as #h1=...) is left to decodeState
-  function cidFromHash(hash) {
-    const raw = (hash.startsWith("#") ? hash.slice(1) : hash).trim();
-    return isValid256t(raw) ? raw : null;
-  }
-
-  function stateFromContent(text) {
-    try {
-      const doc = JSON.parse(text);
-      if (doc && typeof doc === "object" && typeof doc.src === "string") {
-        return { src: doc.src, pos: (doc.pos && typeof doc.pos === "object") ? doc.pos : {} };
-      }
-    } catch {
-      // not JSON: treat the whole file as diagram source
-    }
-    return { src: text, pos: {} };
-  }
-
-  async function loadFromCid(cid) {
-    $savedState.className = "savedState";
-    $savedState.textContent = "Loading…";
-    let text;
-    try {
-      // Small content is inside the CID itself, so there's nothing to download
-      const response = (cidContentLength(cid) <= INLINE_CONTENT_THRESHOLD)
-        ? new Response(base64UrlToBytes(cid.slice(8)))
-        : await fetch(`${CONTENT_BASE}/${cid}`);
-      if (!response.ok) {
-        const reason = (response.status === 404) ? "not found (it may have expired or been deleted)" : `HTTP ${response.status}`;
-        showLoadError(`Couldn't load ${cid} from 256t.us: ${reason}.`);
-        return;
-      }
-      text = await response.text();
-    } catch (error) {
-      showLoadError(`Couldn't reach 256t.us to load ${cid}: ${error.message}`);
-      return;
-    }
-    applyState(stateFromContent(text), { replace: true, fromHash: true });
-    saved = { cid, payload: text };
-    renderAll();
-    // Plain-text source gets laid out on load; that layout isn't an edit, so the URL keeps the CID
-    saved.payload = savePayload(state);
-    updateSavedState();
-  }
-
-  function showLoadError(message) {
-    saved = null;
-    applyState({ src: "", pos: {} }, { replace: true });
-    renderAll();
-    $errorBox.classList.add("show");
-    $errorBox.textContent = message;
-    $parseStatus.textContent = "Load failed";
-    $parseStatus.className = "err";
-    updateSavedState();
-  }
-
-  function shortCid(cid) {
-    return cid.length > 16 ? `${cid.slice(0, 8)}…${cid.slice(-6)}` : cid;
-  }
-
-  function updateSavedState() {
-    $savedState.textContent = "";
-    if (!saved) {
-      $savedState.className = "savedState";
-      $savedState.textContent = "Not saved";
-      return;
-    }
-    const link = document.createElement("a");
-    link.href = `${CONTENT_BASE}/${saved.cid}`;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.title = saved.cid;
-    link.textContent = shortCid(saved.cid);
-    const dirty = savePayload(state) !== saved.payload;
-    $savedState.className = dirty ? "savedState dirty" : "savedState";
-    $savedState.append(dirty ? "Unsaved changes since " : "Saved as ", link);
-  }
-
-  let ignoreHashChange = false;
-
-  function syncHash({ replace } = { replace: true }) {
-    // While the diagram matches what's on HashBin, the short CID link describes it completely
-    const unchanged = saved && savePayload(state) === saved.payload;
-    const newHash = unchanged ? "#" + saved.cid : "#" + encodeState(state);
-    ignoreHashChange = true;
-    if (replace) history.replaceState(null, "", newHash);
-    else history.pushState(null, "", newHash);
-    ignoreHashChange = false;
-    updateHashStatus();
-    updateSavedState();
-  }
-
-  function updateHashStatus() {
-    $hashStatus.textContent = `hash: ${location.hash.length} chars`;
-    refreshQr();
-  }
-
-  window.addEventListener("hashchange", () => {
-    if (ignoreHashChange) return;
-    const cid = cidFromHash(location.hash);
-    if (cid !== null) {
-      if (saved && saved.cid === cid) {
-        // Back to the saved version: no need to fetch what we already have
-        applyState(stateFromContent(saved.payload), { replace: true, fromHash: true });
-        renderAll();
-      } else {
-        loadFromCid(cid);
-      }
-      return;
-    }
-    const incoming = decodeState(location.hash);
-    if (!incoming) return;
-    applyState(incoming, { replace: true, fromHash: true });
-    renderAll();
-  });
+  panel.dialog.addEventListener('close',()=>{qrSave=false;});
+  const load=panel.load.bind(panel);panel.load=input=>{input=input.trim();navigationRevision++;cancelInteractions();const cid=store.cid(input),options={};try{const url=new URL(input);if(url.searchParams.has('run'))options.run=url.searchParams.get('run')!=='0';if(url.searchParams.has('view'))options.view=url.searchParams.get('view');}catch{}if(cid)pendingOptions.set(cid,options);return load(input);};
+  const share=createShareDialog({urlState,getSnapshot:()=>snapshotState({flush:true}),onSave:()=>panel.openSave()});
+  shareButton.onclick=()=>{try{share.open();document.getElementById('share-run').checked=autoRun;document.getElementById('share-run').dispatchEvent(new Event('change'));}catch(error){showLoadError(error.message);}};
+  const qr=createQrDialog({config,urlState,onLoad:outcome=>{const incoming=new URL(outcome.kind==='cid'?urlState.link(location.href,outcome.cid):outcome.href),url=new URL(location.href);url.search=incoming.search;url.hash=incoming.hash;history.pushState(null,'',url);return openURL(url.href);},onSave:()=>{qrSave=true;qr.dialog.close();return panel.openSave();}});
+  qrButton.onclick=()=>{try{qr.open(urlState.build(snapshotState({flush:true}),{run:autoRun,view:viewMode==='split'?undefined:viewMode}).href);}catch(error){showLoadError(error.message);}};
+  renderButton.onclick=()=>{try{state=fromDocument(type.normalize({src:$src.value,pos:state.pos,autorun:autoRun,view:viewMode}));renderAll();syncHash();}catch(error){showLoadError(error.message);}};
+  document.getElementById('btnReset').onclick=()=>{navigationRevision++;panel.cancelLoad();cancelInteractions();drafts.opened();autoRun=true;setViewMode('split');saved=null;applyState(makeDefaultState());renderAll();drafts.attempt(snapshotState(),true);syncHash();shell.drawer.dialog.close();};
+  document.getElementById('btnCommit').onclick=()=>{drafts.attempt(snapshotState({flush:true}),true);syncHash({replace:false});shell.drawer.dialog.close();};
+  drafts.mount(shell.drawer.body,doc=>{navigationRevision++;panel.cancelLoad();cancelInteractions();applyDocument(doc);syncHash();},doc=>doc.src);
+  const download=(blob,name)=>{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);};
+  const backup=document.createElement('button');backup.textContent='Download diagram';backup.onclick=()=>{try{download(new Blob([savePayload(snapshotState({flush:true}))],{type:'application/json'}),'diagram.json');}catch(error){showLoadError(error.message);}};shell.drawer.body.append(backup);
+  const fileLabel=document.createElement('label'),file=document.createElement('input');fileLabel.textContent='Open diagram file';file.type='file';file.accept='.json,.modl,.txt';file.setAttribute('aria-label','Open diagram file');fileLabel.append(file);shell.drawer.body.append(fileLabel);
+  file.onchange=async()=>{const selected=file.files[0];file.value='';if(!selected)return;const revision=++navigationRevision;panel.cancelLoad();cancelInteractions();try{if(selected.size>config.maxBytes)throw Error('Diagram file exceeds 5 MiB.');const data=await selected.slice(0,config.maxBytes+1).arrayBuffer();if(revision!==navigationRevision)return;const value=documents.parse(new TextDecoder('utf-8',{fatal:true}).decode(data));drafts.opened();applyDocument(value);syncHash();shell.drawer.dialog.close();}catch(error){if(revision===navigationRevision)showLoadError(error.message);}};
+  mobileTabs=mountMobileTabs({container:shell.toolbar,panels:[{label:'Code',panel:document.querySelector('.left')},{label:'Preview',panel:document.querySelector('.right')}],onChange:index=>{if(initialized&&autoRun&&index===1&&matchMedia('(max-width:767px)').matches)requestAnimationFrame(renderAll);}});
 
   // -----------------------------
   // Parsing DSL
@@ -1625,11 +1331,7 @@ retireLegacySignIn();
   }
 
   function applyState(newState, { replace = true, fromHash = false } = {}) {
-    // Sanitize
-    if (!newState || typeof newState !== "object") return;
-    if (typeof newState.src !== "string") newState.src = "";
-    if (!newState.pos || typeof newState.pos !== "object") newState.pos = {};
-    state = newState;
+    state = fromDocument(type.normalize(newState));
 
     // Put src into editor (without retriggering too hard)
     if ($src.value !== state.src) $src.value = state.src;
@@ -1662,102 +1364,39 @@ retireLegacySignIn();
     updateSavedState();
   }
 
-  // Editor input -> parse/render -> hash
-  $src.addEventListener("input", () => {
-    clearTimeout(parseTimer);
-    parseTimer = setTimeout(() => {
-      state.src = $src.value;
-      renderAll();
-      syncHash({ replace: true });
-    }, 160);
+  const offline=new OfflineClient({url:'./service-worker.js',onStatus:result=>{shell.offlineStatus.textContent=result.ready?'Available offline':'Offline setup incomplete';},onUpdate:()=>{update.hidden=false;shell.offlineStatus.textContent='Offline update ready';}});
+  const repair=document.createElement('button'),update=document.createElement('button');repair.id='offline-repair';repair.textContent='Repair offline copy';update.id='offline-update';update.textContent='Update and reload';update.hidden=true;shell.drawer.body.append(repair,update);
+  repair.onclick=()=>offline.repair().catch(error=>{shell.offlineStatus.textContent=error.message;});update.onclick=()=>{syncHash();offline.activateUpdate();};
+  let controlled=Boolean(navigator.serviceWorker?.controller);navigator.serviceWorker?.addEventListener('controllerchange',()=>{if(controlled){syncHash();location.reload();}controlled=true;});
+  async function openURL(href){
+   const revision=++navigationRevision;lastNavigation=href;panel.cancelLoad();cancelInteractions();drafts.opened();
+   try{
+    const intent=urlState.parse(href),url=new URL(href),options={};
+    if(url.searchParams.has('run'))options.run=intent.run;if(intent.view)options.view=intent.view;
+    if(intent.kind==='publish'){
+     const result=await store.published(intent.hash);if(revision!==navigationRevision)return;
+     if(result?.snapshot){applyDocument(result.snapshot,result.cid??null,options);syncHash();}
+     if(result){panel.status.textContent=result.error||'Saved to HashBin.';shell.drawer.open();}
+    }else if(intent.kind==='source'){applyDocument(intent.doc,null,options);}
+    else if(intent.kind==='cid'){panel.status.textContent='Loading from HashBin…';const doc=await store.load(intent.cid);if(revision!==navigationRevision)return;applyDocument(doc,intent.cid,options);panel.status.textContent='Loaded from HashBin.';}
+    else if(intent.kind==='example'){
+     const{catalog}=await import('./gallery-catalog.js');if(revision!==navigationRevision)return;const{legacyExamples}=await import('./legacy-examples.js');if(revision!==navigationRevision)return;const example=catalog.find(example=>example.id===intent.id)??(legacyExamples[intent.id]?{document:legacyExamples[intent.id]}:null);if(!example)throw Error('Unknown diagram example.');applyDocument(example.document,null,options);syncHash();
+    }else if(intent.kind==='none'){autoRun=true;setViewMode('split');applyState(makeDefaultState());renderAll();syncHash();}
+    else throw Error('This diagram link is not supported.');
+   }catch(error){if(revision===navigationRevision)showLoadError(error.message);}
+  }
+  $src.addEventListener('input',()=>{
+   const revision=++navigationRevision;panel.cancelLoad();clearTimeout(parseTimer);saved=null;
+   drafts.attempt({src:$src.value,pos:state.pos,autorun:autoRun,view:viewMode},true);
+   parseTimer=setTimeout(()=>{if(revision!==navigationRevision)return;try{type.normalize({src:$src.value,pos:state.pos});if(autoRun){state.src=$src.value;renderAll();}syncHash();}catch(error){showLoadError(error.message);}},160);
   });
-
-  window.addEventListener("resize", () => {
-    // Re-render to match new SVG size; state unchanged
-    renderAll();
-  });
-
-  // -----------------------------
-  // Save dialog: each save is approved on hashbin.org
-  // -----------------------------
-  const $saveDialog = document.getElementById("saveDialog");
-  const $saveForm = document.getElementById("saveForm");
-  const $saveMessage = document.getElementById("saveMessage");
-  const $btnSaveConfirm = document.getElementById("btnSaveConfirm");
-
-  function dollars(cents) {
-    return `$${(cents / 100).toFixed(2)}`;
-  }
-
-  function setSaveMessage(text, kind) {
-    $saveMessage.textContent = text;
-    $saveMessage.className = kind ? `saveMessage ${kind}` : "saveMessage";
-  }
-
-  function openSaveDialog(message, kind = "err") {
-    if (!$saveDialog.open) $saveDialog.showModal();
-    $btnSaveConfirm.disabled = !hb;
-    if (message) setSaveMessage(message, kind);
-    else setSaveMessage(hb ? "" : `${saveProblem}.`, hb ? "" : "err");
-  }
-
-  function savedMessage({ cid, cost_cents, expires_at }) {
-    const expires = expires_at ? `Kept until ${new Date(expires_at).toLocaleDateString()}. ` : "";
-    const cost = cost_cents ? `Charged ${dollars(cost_cents)}. ` : "";
-    return `Saved. ${cost}${expires}The URL now loads it by CID:\n${cid}`;
-  }
-
-  // Runs synchronously in the click so the browser allows HashBin's approval window. If the window is
-  // blocked, the SDK redirects instead and the save comes back through completeRedirectSave().
-  function save() {
-    const payload = savePayload(state);
-    $btnSaveConfirm.disabled = true;
-    setSaveMessage("Approve the save in the HashBin window…", "");
-    hb.publish(payload, { contentType: "application/json", fileName: "diagram.json", clientState: { hash: location.hash, payload } })
-      .finally(() => { $btnSaveConfirm.disabled = !hb; })
-      .then((result) => {
-        if (result.redirected) return;
-        saved = { cid: result.cid, payload };
-        syncHash({ replace: false });
-        setSaveMessage(savedMessage(result), "ok");
-      }, (error) => setSaveMessage(publishMessage(error), "err"));
-  }
-
-  document.getElementById("btnSave").addEventListener("click", () => openSaveDialog());
-  document.getElementById("btnSaveCancel").addEventListener("click", () => $saveDialog.close());
-
-  $saveForm.addEventListener("submit", (ev) => {
-    ev.preventDefault();
-    if (hb) save();
-  });
-
-  // -----------------------------
-  // Boot from URL hash (if present)
-  // -----------------------------
-  function boot() {
-    const cid = cidFromHash(location.hash);
-    if (cid !== null) {
-      return loadFromCid(cid);
-    }
-    const incoming = decodeState(location.hash);
-    if (incoming) {
-      applyState(incoming, { replace: true, fromHash: true });
-    } else {
-      applyState(makeDefaultState(), { replace: true });
-      syncHash({ replace: true });
-    }
-    renderAll();
-  }
-
-  const booted = boot();
-
-  // A save that redirected finishes once the diagram it left with is back
-  Promise.resolve(booted).then(() => {
-    if (publishReturn?.error) openSaveDialog(publishReturn.error);
-    else if (publishReturn?.cid) {
-      saved = { cid: publishReturn.cid, payload: publishReturn.payload };
-      syncHash({ replace: true });
-      openSaveDialog(savedMessage(publishReturn), "ok");
-    }
-  });
+  $svg.addEventListener('pointerdown',()=>{navigationRevision++;panel.cancelLoad();try{gestureFingerprint=savePayload(snapshotState());}catch{}},true);
+  for(const name of ['pointerup','pointercancel'])$svg.addEventListener(name,()=>queueMicrotask(()=>{gestureFingerprint=null;}));
+  window.addEventListener('resize',()=>{if(autoRun)renderAll();});
+  const navigate=()=>{if(lastNavigation!==location.href)void openURL(location.href);};window.addEventListener('hashchange',navigate);window.addEventListener('popstate',navigate);
+  window.addEventListener('beforeunload',()=>{drafts.attempt({src:$src.value,pos:state.pos,autorun:autoRun,view:viewMode});});
+  globalThis.ModlApp={getSource:()=>$src.value,getSnapshot:()=>snapshotState(),openURL,setSource:src=>{$src.value=src;$src.dispatchEvent(new Event('input',{bubbles:true}));},render:()=>renderButton.click(),store,panel};
+  await openURL(location.href);initialized=true;document.body.dataset.ready='true';
+  store.retireLegacyTokens().catch(()=>{});
+  offline.init().catch(error=>{shell.offlineStatus.textContent=error.message;});
 })();
