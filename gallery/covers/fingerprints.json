@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "js/editor.js": "ee2f600ba250d96e28ec74e1d2dff673082166a1da8f09dca3004e6a66ed4e80",
+    "js/editor.js": "53b6c7ecf8f61b689b44e37f09f3e028c5ef9252dab4bb69eece9c89539256f3",
     "js/fragment-config.js": "ee0dbd58eb2a52589b7e43002728e43967bad44d9cf5c3c444c021856354ba83",
     "js/gallery-catalog.js": "b8abacf2ccabd8d46f218d2a08b2c79ad178076d3efe73cd2ab270d132120d72",
     "engine-integrity.json": "26274edf5ca6c5c78c8b9d1e0dc6a703de9580c8b46793cce46e3cb4e3a466e5"

@@ -1380,7 +1380,7 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
     }else if(intent.kind==='source'){applyDocument(intent.doc,null,options);}
     else if(intent.kind==='cid'){panel.status.textContent='Loading from HashBin…';const doc=await store.load(intent.cid);if(revision!==navigationRevision)return;applyDocument(doc,intent.cid,options);panel.status.textContent='Loaded from HashBin.';}
     else if(intent.kind==='example'){
-     const{catalog}=await import('./gallery-catalog.js');if(revision!==navigationRevision)return;const example=catalog.find(example=>example.id===intent.id);if(!example)throw Error('Unknown diagram example.');applyDocument(example.document,null,options);syncHash();
+     const{catalog}=await import('./gallery-catalog.js');if(revision!==navigationRevision)return;const{legacyExamples}=await import('./legacy-examples.js');if(revision!==navigationRevision)return;const example=catalog.find(example=>example.id===intent.id)??(legacyExamples[intent.id]?{document:legacyExamples[intent.id]}:null);if(!example)throw Error('Unknown diagram example.');applyDocument(example.document,null,options);syncHash();
     }else if(intent.kind==='none'){autoRun=true;setViewMode('split');applyState(makeDefaultState());renderAll();syncHash();}
     else throw Error('This diagram link is not supported.');
    }catch(error){if(revision===navigationRevision)showLoadError(error.message);}
