@@ -1,0 +1,12 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Ports, groups and source views</title><h1>Ports, groups and source views</h1>
+<p>Endpoint labels use brackets: <code>a[err] -&gt; b[3]</code>. Quote a port containing punctuation: <code>a["2&gt;"]</code>. Brackets label either end of the edge. The standalone parser is exported from <code>js/parse.js</code>; words carry zero-based UTF-16 start/end offsets, and parsed elements carry raw text and attribute spans.</p>
+<pre class="modl"><code>each for x in api web {
+  build square echo "$x"
+  build[err] -&gt; log double
+}
+</code></pre>
+<p>A final unquoted <code>{</code> opens a group; a line containing only <code>}</code> closes it. Groups nest. Nodes belong to the group where first mentioned. Edges may connect to a group box. Previously a bare trailing brace was text: quote it to preserve that meaning.</p>
+<p>New shapes: note, cylinder, parallelogram, stadium, subroutine and oval. New edge style: double. These words are reserved in their corresponding optional attribute slots; quote them when intended as text.</p>
+<p>Unsaved positions use a deterministic left-to-right layered layout; saved fractional coordinates are preserved. Group boxes grow around their members.</p>
+<p>Labels retain full text on hover and keyboard focus. In the drawer, “Show text as written” displays raw quotes in a monospace view. This setting travels with the document. Gripeline comments are highlighted in a preview beneath the source editor.</p>
+<p>Append <code>&amp;mark=a,b,L5</code> to an h1 fragment to highlight nodes and source lines without editing source. Marks are transient link metadata. Gripeline treats double as stderr routing, note/cylinder as files, parallelogram as a stream and subroutine as a command calling a shell function. The hex file alias remains supported.</p></html>

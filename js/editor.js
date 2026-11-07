@@ -1,3 +1,5 @@
+import {layeredPositions, groupBounds, extraShape, marksFromURL} from './diagram-features.js';
+import { NODE_SIZES, NODE_SHAPES, EDGE_STYLES, COLORS, lexLine, parseAttrs, parseSource, normalizeUrl } from './parse.js';
 import{config,type,fromDocument,serializeLegacy,encodeState,urlState,documents,HashBinStore}from'./fragment-config.js';
 import{LocalDrafts,createStorage,HashBinPanel,createShell,mountMobileTabs,createShareDialog,createQrDialog,OfflineClient}from'../vendor/fragment-kit-v0.3.4/src/index.js';
 function optionalStorage(kind){try{return globalThis[kind];}catch{return undefined;}}
@@ -22,25 +24,6 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
   // -----------------------------
   // Reserved vocab
   // -----------------------------
-  const NODE_SIZES = ["tiny", "small", "normal", "big", "bigger", "huge"];
-  const NODE_SHAPES = ["none", "circle", "square", "diamond", "triangle", "hex"];
-  const EDGE_STYLES = ["solid", "dashed", "dotted", "bold"];
-
-  const COLORS = {
-    gray:   "#9aa4b2",
-    black:  "#1f2937",
-    white:  "#f8fafc",
-    red:    "#ef4444",
-    orange: "#f97316",
-    yellow: "#eab308",
-    green:  "#22c55e",
-    teal:   "#14b8a6",
-    blue:   "#3b82f6",
-    purple: "#a855f7",
-    pink:   "#ec4899",
-    brown:  "#92400e",
-  };
-
   // -----------------------------
   // UI wiring
   // -----------------------------
@@ -86,6 +69,8 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
   }
 
   function shapeSvg(shape, stroke) {
+    const custom=extraShape(shape,12,8,18,12);
+    if(custom)return `<svg viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><${custom[0]} ${Object.entries(custom[1]).map(([k,v])=>`${k}="${v}"`).join(' ')} fill="rgba(232,237,243,.15)" stroke="currentColor"/></svg>`;
     const s = stroke || "rgba(232,237,243,0.9)";
     const f = "rgba(232,237,243,0.15)";
     if (shape === "none") {
@@ -198,12 +183,16 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
   const cidFromHash=hash=>store.cid(hash);
   const stateFromContent=documents.parse;
   function showLoadError(message){$errorBox.classList.add('show');$errorBox.textContent=message;$parseStatus.textContent='Load failed';$parseStatus.className='err';panel.status.textContent=message;}
+  const rawLabel=document.createElement('label'),rawToggle=document.createElement('input');rawToggle.type='checkbox';rawToggle.id='show-raw-text';rawLabel.append(rawToggle,' Show text as written');shell.drawer.body.append(rawLabel);
+  rawToggle.onchange=()=>{state.rawText=rawToggle.checked;renderAll();syncHash();};
+  const pragmaPreview=document.createElement('pre');pragmaPreview.id='pragma-preview';pragmaPreview.setAttribute('aria-label','Highlighted gripeline pragmas');$src.after(pragmaPreview);
+  function highlightPragmas(){pragmaPreview.replaceChildren();for(const line of $src.value.split(/\r?\n/)){const comment=lexLine(line).find(p=>p.type==='comment');if(comment&&/^#gl(?:\s|$)/.test(comment.raw)){const mark=document.createElement('mark');mark.textContent=comment.raw;pragmaPreview.append(mark,'\n');}}}
   function snapshotState({flush=false}={}){
    if(flush)clearTimeout(parseTimer);
-   if(flush&&autoRun&&state.src!==$src.value){state=fromDocument(type.normalize({src:$src.value,pos:state.pos,autorun:autoRun,view:viewMode}));renderAll();}
-   return fromDocument(type.normalize({src:$src.value,pos:state.pos,autorun:autoRun,view:viewMode}));
+   if(flush&&autoRun&&state.src!==$src.value){state=fromDocument(type.normalize({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun,view:viewMode}));renderAll();}
+   return fromDocument(type.normalize({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun,view:viewMode}));
   }
-  const fingerprint=()=>JSON.stringify({src:$src.value,pos:state.pos,autorun:autoRun,view:viewMode});
+  const fingerprint=()=>JSON.stringify({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun,view:viewMode});
   function updateSavedState(){
    $savedState.textContent='Not saved';$savedState.className='savedState';if(!saved)return;
    let dirty=true;try{dirty=savePayload(snapshotState())!==saved.payload;}catch{}
@@ -244,7 +233,7 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
   shareButton.onclick=()=>{try{share.open();document.getElementById('share-run').checked=autoRun;document.getElementById('share-run').dispatchEvent(new Event('change'));}catch(error){showLoadError(error.message);}};
   const qr=createQrDialog({config,urlState,onLoad:outcome=>{const incoming=new URL(outcome.kind==='cid'?urlState.link(location.href,outcome.cid):outcome.href),url=new URL(location.href);url.search=incoming.search;url.hash=incoming.hash;history.pushState(null,'',url);return openURL(url.href);},onSave:()=>{qrSave=true;qr.dialog.close();return panel.openSave();}});
   qrButton.onclick=()=>{try{qr.open(urlState.build(snapshotState({flush:true}),{run:autoRun,view:viewMode==='split'?undefined:viewMode}).href);}catch(error){showLoadError(error.message);}};
-  renderButton.onclick=()=>{try{state=fromDocument(type.normalize({src:$src.value,pos:state.pos,autorun:autoRun,view:viewMode}));renderAll();syncHash();}catch(error){showLoadError(error.message);}};
+  renderButton.onclick=()=>{try{state=fromDocument(type.normalize({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun,view:viewMode}));renderAll();syncHash();}catch(error){showLoadError(error.message);}};
   document.getElementById('btnReset').onclick=()=>{navigationRevision++;panel.cancelLoad();cancelInteractions();drafts.opened();autoRun=true;setViewMode('split');saved=null;applyState(makeDefaultState());renderAll();drafts.attempt(snapshotState(),true);syncHash();shell.drawer.dialog.close();};
   document.getElementById('btnCommit').onclick=()=>{drafts.attempt(snapshotState({flush:true}),true);syncHash({replace:false});shell.drawer.dialog.close();};
   drafts.mount(shell.drawer.body,doc=>{navigationRevision++;panel.cancelLoad();cancelInteractions();applyDocument(doc);syncHash();},doc=>doc.src);
@@ -253,237 +242,6 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
   const fileLabel=document.createElement('label'),file=document.createElement('input');fileLabel.textContent='Open diagram file';file.type='file';file.accept='.json,.modl,.txt';file.setAttribute('aria-label','Open diagram file');fileLabel.append(file);shell.drawer.body.append(fileLabel);
   file.onchange=async()=>{const selected=file.files[0];file.value='';if(!selected)return;const revision=++navigationRevision;panel.cancelLoad();cancelInteractions();try{if(selected.size>config.maxBytes)throw Error('Diagram file exceeds 5 MiB.');const data=await selected.slice(0,config.maxBytes+1).arrayBuffer();if(revision!==navigationRevision)return;const value=documents.parse(new TextDecoder('utf-8',{fatal:true}).decode(data));drafts.opened();applyDocument(value);syncHash();shell.drawer.dialog.close();}catch(error){if(revision===navigationRevision)showLoadError(error.message);}};
   mobileTabs=mountMobileTabs({container:shell.toolbar,panels:[{label:'Code',panel:document.querySelector('.left')},{label:'Preview',panel:document.querySelector('.right')}],onChange:index=>{if(initialized&&autoRun&&index===1&&matchMedia('(max-width:767px)').matches)requestAnimationFrame(renderAll);}});
-
-  // -----------------------------
-  // Parsing DSL
-  // -----------------------------
-  // Splits a line into pieces: {type: "ws" | "arrow" | "comment", raw} and {type: "word", raw, value, quoted}.
-  // A quote opens a string only at the start of a word or right after a closing quote, and only if the same
-  // quote character closes it later on the line; otherwise it is an ordinary character. Inside a string,
-  // "->", "#" and whitespace are text. Strings and plain characters with nothing between them form one word.
-  function lexLine(line) {
-    const pieces = [];
-    const isWS = (c) => /\s/.test(c);
-    let i = 0;
-    while (i < line.length) {
-      const c = line[i];
-      if (isWS(c)) {
-        let j = i;
-        while (j < line.length && isWS(line[j])) j++;
-        pieces.push({ type: "ws", raw: line.slice(i, j) });
-        i = j;
-      } else if (c === "#" && (i === 0 || isWS(line[i - 1]))) {
-        pieces.push({ type: "comment", raw: line.slice(i) });
-        break;
-      } else if (line.startsWith("->", i)) {
-        pieces.push({ type: "arrow", raw: "->" });
-        i += 2;
-      } else {
-        const start = i;
-        let value = "";
-        let quoted = false;
-        let canOpen = true;
-        while (i < line.length && !isWS(line[i]) && !line.startsWith("->", i)) {
-          const q = line[i];
-          const close = (canOpen && (q === '"' || q === "'")) ? line.indexOf(q, i + 1) : -1;
-          if (close >= 0) {
-            value += line.slice(i + 1, close);
-            quoted = true;
-            i = close + 1;
-          } else {
-            value += q;
-            canOpen = false;
-            i++;
-          }
-        }
-        pieces.push({ type: "word", raw: line.slice(start, i), value, quoted });
-      }
-    }
-    return pieces;
-  }
-
-  function looksLikeUrlToken(tok) {
-    if (!tok) return false;
-    if (tok.startsWith("/")) return true;
-    if (tok.startsWith("http://") || tok.startsWith("https://")) return true;
-    if (tok.startsWith("mailto:")) return true;
-    if (tok.startsWith("www.")) return true;
-    return false;
-  }
-
-  function normalizeUrl(tok) {
-    if (!tok) return "";
-    if (tok.startsWith("/")) return "https://" + tok.slice(1);
-    if (tok.startsWith("www.")) return "https://" + tok;
-    return tok;
-  }
-
-  function isValidId(id) {
-    // Keep it simple; allow common graph ids
-    return /^[A-Za-z0-9_:\-]+$/.test(id);
-  }
-
-  // Quoted ids may hold any characters, but not nothing
-  function idError(word, lineNo) {
-    if (word.quoted) return word.value ? "" : `Line ${lineNo+1}: empty node id`;
-    return isValidId(word.value) ? "" : `Line ${lineNo+1}: invalid node id "${word.value}"`;
-  }
-
-  function parseAttrs(words, kind) {
-    // Order: style, color, url, text
-    // But each optional, so we detect by reserved sets. Quoted words are never keywords or URLs.
-    const tokens = words.map(w => w.quoted ? null : w.value);
-    let i = 0;
-
-    let size = "";
-    let style = "";
-    let color = "";
-    let url = "";
-    let text = "";
-
-    if (tokens[i]) {
-      if (kind === "node") {
-        if (NODE_SIZES.includes(tokens[i])) {
-          size = tokens[i++];
-        }
-        if (tokens[i] && NODE_SHAPES.includes(tokens[i])) {
-          style = tokens[i++]; // shape
-        }
-      } else if (kind === "edge") {
-        if (NODE_SIZES.includes(tokens[i])) {
-          size = tokens[i++];
-        }
-        if (tokens[i] && EDGE_STYLES.includes(tokens[i])) {
-          style = tokens[i++]; // line style
-        }
-      }
-    }
-
-    if (tokens[i] && Object.prototype.hasOwnProperty.call(COLORS, tokens[i])) {
-      color = tokens[i++];
-    }
-
-    if (tokens[i] && looksLikeUrlToken(tokens[i])) {
-      url = normalizeUrl(tokens[i++]);
-    }
-
-    const textGiven = i < words.length;
-    if (textGiven) {
-      text = words.slice(i).map(w => w.value).join(" ");
-    }
-
-    return { size, style, color, url, text, textGiven };
-  }
-
-  function parseSource(src) {
-    const nodes = new Map(); // id -> {id, size, shape, color, url, text}
-    const edges = [];        // {from,to, size,style,color,url,text, key}
-    let background = "";
-
-    const errors = [];
-    const lines = src.split(/\r?\n/);
-
-    function ensureNode(id) {
-      if (!nodes.has(id)) {
-        nodes.set(id, {
-          id,
-          size: "normal",
-          shape: "circle",
-          color: "gray",
-          url: "",
-          text: "",
-          sizeGiven: false,
-          shapeGiven: false,
-        });
-      }
-      return nodes.get(id);
-    }
-
-    for (let lineNo = 0; lineNo < lines.length; lineNo++) {
-      const pieces = lexLine(lines[lineNo]);
-      const words = pieces.filter(p => p.type === "word");
-      const hasArrow = pieces.some(p => p.type === "arrow");
-      if (!words.length && !hasArrow) continue;
-
-      if (!hasArrow && words.length === 1 && !words[0].quoted
-          && Object.prototype.hasOwnProperty.call(COLORS, words[0].value)) {
-        background = words[0].value;
-        continue;
-      }
-
-      if (hasArrow) {
-        // Edge line (possibly chain)
-        const segs = [[]];
-        for (const p of pieces) {
-          if (p.type === "arrow") segs.push([]);
-          else if (p.type === "word") segs[segs.length - 1].push(p);
-        }
-        const nonEmpty = segs.filter(s => s.length);
-        if (nonEmpty.length < 2) {
-          errors.push(`Line ${lineNo+1}: malformed edge line`);
-          continue;
-        }
-
-        // Last segment may contain attrs after the last node id
-        const lastWords = nonEmpty[nonEmpty.length - 1];
-
-        const chainIds = [];
-        for (let i = 0; i < nonEmpty.length - 1; i++) {
-          const err = idError(nonEmpty[i][0], lineNo);
-          if (err) {
-            errors.push(err);
-            continue;
-          }
-          chainIds.push(nonEmpty[i][0].value);
-        }
-
-        const lastErr = idError(lastWords[0], lineNo);
-        if (lastErr) {
-          errors.push(lastErr);
-          continue;
-        }
-        chainIds.push(lastWords[0].value);
-
-        const attrs = parseAttrs(lastWords.slice(1), "edge");
-        // Apply to every edge in chain
-        for (let i = 0; i < chainIds.length - 1; i++) {
-          const from = chainIds[i];
-          const to = chainIds[i + 1];
-          ensureNode(from);
-          ensureNode(to);
-
-          edges.push({
-            from, to,
-            size: attrs.size || "normal",
-            style: attrs.style || "solid",
-            color: attrs.color || "gray",
-            url: attrs.url || "",
-            text: attrs.text || "",
-            key: `${from}->${to}#${edges.length}` // allow duplicates
-          });
-        }
-      } else {
-        // Node line
-        const err = idError(words[0], lineNo);
-        if (err) {
-          errors.push(err);
-          continue;
-        }
-        const attrs = parseAttrs(words.slice(1), "node");
-        const n = ensureNode(words[0].value);
-        if (attrs.size) { n.size = attrs.size; n.sizeGiven = true; }
-        if (attrs.style) { n.shape = attrs.style; n.shapeGiven = true; }
-        if (attrs.color) n.color = attrs.color;
-        if (attrs.url) n.url = attrs.url;
-        if (attrs.textGiven) n.text = attrs.text;
-        // Without text we keep prior text, so a later bare "id" line won't wipe it; "" clears it explicitly.
-      }
-    }
-
-    // Prune accidental empty duplicates? We'll just keep as parsed.
-
-    return { nodes, edges, background, errors };
-  }
 
   // -----------------------------
   // Layout + Rendering (SVG)
@@ -531,21 +289,7 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
 
     if (missing.length === 0) return;
 
-    // Place missing nodes around a circle
-    const cx = W * 0.5;
-    const cy = H * 0.5;
-    const r = Math.min(W, H) * 0.32;
-
-    // Count total for stable distribution
-    const all = ids;
-    for (let i = 0; i < all.length; i++) {
-      const id = all[i];
-      if (state.pos[id]) continue;
-      const ang = (i / Math.max(1, all.length)) * Math.PI * 2;
-      const x = cx + Math.cos(ang) * r;
-      const y = cy + Math.sin(ang) * r;
-      state.pos[id] = [Math.round(x), Math.round(y)];
-    }
+    layeredPositions(diagram, state.pos);
   }
 
   // Screen = translation + scale * world. Keep the camera out of saved positions.
@@ -834,14 +578,25 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
       if (layout) imageLayouts.set(id, layout);
     }
     const reachOf = (node) => {
+      const box=boxes?.get(node.id);
+      if(box)return (ux,uy)=>Math.min(Math.abs(box.w/2/(ux||1e-9)),Math.abs(box.h/2/(uy||1e-9)));
       const layout = imageLayouts.get(node.id);
       return layout ? layout.reach : () => nodeRadius(node.shape, node.size);
     };
 
+    const boxes=groupBounds(diagram,state.pos);
+    const marks=marksFromURL(location.href);
+    const svgEl=(tag,attrs={})=>{const el=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(attrs))el.setAttribute(k,v);return el;};
+    for(const[id,box]of boxes){
+      const n=diagram.nodes.get(id),g=svgEl('g',{'data-group-id':id});
+      g.appendChild(svgEl('rect',{x:box.x,y:box.y,width:box.w,height:box.h,rx:12,fill:'rgba(100,120,140,.08)',stroke:COLORS[n.color]??COLORS.gray,'stroke-dasharray':'6 4'}));
+      const title=svgEl('text',{x:box.x+12,y:box.y+22,fill:COLORS[n.color]??COLORS.gray});title.textContent=state.rawText?n.rawText??n.text:n.text||id;g.appendChild(title);viewportGroup.insertBefore(g,edgeLayer);
+    }
+    const position=id=>{const box=boxes.get(id);return box?[box.x+box.w/2,box.y+box.h/2]:state.pos[id];};
     // Edge rendering
     for (const e of diagram.edges) {
-      const fromPos = state.pos[e.from];
-      const toPos = state.pos[e.to];
+      const fromPos = position(e.from);
+      const toPos = position(e.to);
       const fromNode = diagram.nodes.get(e.from);
       const toNode = diagram.nodes.get(e.to);
       if (!fromPos || !toPos || !fromNode || !toNode) continue;
@@ -850,6 +605,9 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
 
       const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
 
+      g.setAttribute('data-edge-line',e.line);
+      if(marks.has('L'+e.line)){g.style.filter='drop-shadow(0 0 5px red)';}
+      for(const [text,x,y]of[[e.fromPort,x1-uy*12,y1+ux*12],[e.toPort,x2-uy*12,y2+ux*12]])if(text){const label=svgEl('text',{x,y,fill:'currentColor','font-size':11});label.textContent=text;g.appendChild(label);}
       // Visible stroke
       const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
       p.setAttribute("d", `M ${x1} ${y1} L ${x2} ${y2}`);
@@ -860,6 +618,9 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
       p.setAttribute("fill", "none");
       p.setAttribute("marker-end", `url(#${markerIdFor(e.color || "gray")})`);
 
+      if(e.style==='double'){
+        const second=p.cloneNode();second.setAttribute('d',`M ${x1-uy*5} ${y1+ux*5} L ${x2-uy*5} ${y2+ux*5}`);second.removeAttribute('marker-end');g.appendChild(second);
+      }
       // Hover text
       const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
       const tText = [
@@ -868,7 +629,8 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
         e.url ? `link: ${e.url}` : ""
       ].filter(Boolean).join("\n");
       title.textContent = tText;
-      p.appendChild(title);
+      g.appendChild(title);
+      g.setAttribute("tabindex","0");g.setAttribute("aria-label",tText);
 
       // Click overlay for edges (fatter invisible stroke)
       const hit = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -904,7 +666,8 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
         label.setAttribute("stroke", "rgba(0,0,0,0.6)");
         label.setAttribute("stroke-width", "3");
         label.style.pointerEvents = "none";
-        label.textContent = truncateLabel(e.text, 28);
+        if(state.rawText)label.setAttribute('font-family','monospace');
+        label.textContent = (state.rawText ? e.rawText??e.text : truncateLabel(e.text, 28));
         g.appendChild(label);
       }
 
@@ -915,6 +678,7 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
 
     // Node rendering
     for (const [id, n] of diagram.nodes.entries()) {
+      if(n.isGroup)continue;
       const pos = state.pos[id];
       if (!pos) continue;
       const x = pos[0], y = pos[1];
@@ -930,6 +694,8 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
 
       const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
       g.setAttribute("data-node-id", id);
+      if(marks.has(id)||marks.has('L'+n.line))g.style.filter='drop-shadow(0 0 5px red)';
+      g.setAttribute('tabindex','0');
       g.style.cursor = "grab";
 
       // Hover text
@@ -941,6 +707,7 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
       ].filter(Boolean).join("\n");
       title.textContent = tText;
       g.appendChild(title);
+      g.setAttribute("aria-label",tText);
 
       const layout = imageLayouts.get(id);
       if (layout) {
@@ -954,7 +721,9 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
       const shape = (n.shape && NODE_SHAPES.includes(n.shape)) ? n.shape : "circle";
       let el;
 
-      if (shape === "none") {
+      const custom=extraShape(shape,x,y,w,h);
+      if(custom){el=svgEl(custom[0],custom[1]);}
+      else if (shape === "none") {
         el = null;
       } else if (shape === "circle") {
         el = document.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -1046,7 +815,7 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
       }
 
       // Label: prefer node text; fallback to id
-      const labelText = n.text ? truncateLabel(n.text, 22) : id;
+      const labelText = n.text ? (state.rawText ? n.rawText??n.text : truncateLabel(n.text, 22)) : id;
       const textEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
       textEl.setAttribute("x", x);
       textEl.setAttribute("y", y);
@@ -1141,7 +910,8 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
       textEl.setAttribute("stroke", "rgba(0,0,0,0.6)");
       textEl.setAttribute("stroke-width", "3");
       textEl.style.pointerEvents = "none";
-      textEl.textContent = truncateLabel(n.text, 22);
+      if(state.rawText)textEl.setAttribute('font-family','monospace');
+      textEl.textContent = (state.rawText ? n.rawText??n.text : truncateLabel(n.text, 22));
       g.appendChild(textEl);
     }
   }
@@ -1336,10 +1106,12 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
     // Put src into editor (without retriggering too hard)
     if ($src.value !== state.src) $src.value = state.src;
 
+    rawToggle.checked=Boolean(state.rawText);
     updateHashStatus();
   }
 
   function renderAll() {
+    highlightPragmas();
     const parsed = parseSource(state.src);
 
     if (parsed.errors.length) {
@@ -1387,14 +1159,14 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
   }
   $src.addEventListener('input',()=>{
    const revision=++navigationRevision;panel.cancelLoad();clearTimeout(parseTimer);saved=null;
-   drafts.attempt({src:$src.value,pos:state.pos,autorun:autoRun,view:viewMode},true);
+   drafts.attempt({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun,view:viewMode},true);
    parseTimer=setTimeout(()=>{if(revision!==navigationRevision)return;try{type.normalize({src:$src.value,pos:state.pos});if(autoRun){state.src=$src.value;renderAll();}syncHash();}catch(error){showLoadError(error.message);}},160);
   });
   $svg.addEventListener('pointerdown',()=>{navigationRevision++;panel.cancelLoad();try{gestureFingerprint=savePayload(snapshotState());}catch{}},true);
   for(const name of ['pointerup','pointercancel'])$svg.addEventListener(name,()=>queueMicrotask(()=>{gestureFingerprint=null;}));
   window.addEventListener('resize',()=>{if(autoRun)renderAll();});
   const navigate=()=>{if(lastNavigation!==location.href)void openURL(location.href);};window.addEventListener('hashchange',navigate);window.addEventListener('popstate',navigate);
-  window.addEventListener('beforeunload',()=>{drafts.attempt({src:$src.value,pos:state.pos,autorun:autoRun,view:viewMode});});
+  window.addEventListener('beforeunload',()=>{drafts.attempt({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun,view:viewMode});});
   globalThis.ModlApp={getSource:()=>$src.value,getSnapshot:()=>snapshotState(),openURL,setSource:src=>{$src.value=src;$src.dispatchEvent(new Event('input',{bubbles:true}));},render:()=>renderButton.click(),store,panel};
   await openURL(location.href);initialized=true;document.body.dataset.ready='true';
   store.retireLegacyTokens().catch(()=>{});

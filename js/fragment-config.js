@@ -11,15 +11,18 @@ export function positions(value={}){
  return output;
 }
 export const type={type:'modl',settingsKeys:['view'],fileName:'diagram.json',contentType:'application/json',legacyEnvelopeTypes:['hashbin-diagram:'],
- normalize(value){kit.bounded(value?.src,config.maxBytes);const options=value.modl??value;return{src:value.src,modl:{pos:positions(value.modl?.pos??value.pos),autorun:options.autorun!==false,view:['source','diagram','help'].includes(options.view)?options.view:'split'}};},
- isDefault:doc=>!Object.keys(doc.modl.pos).length&&doc.modl.autorun&&doc.modl.view==='split',
+ normalize(value){kit.bounded(value?.src,config.maxBytes);const options=value.modl??value;return{src:value.src,modl:{rawText:options.rawText===true,pos:positions(value.modl?.pos??value.pos),autorun:options.autorun!==false,view:['source','diagram','help'].includes(options.view)?options.view:'split'}};},
+ isDefault:doc=>!Object.keys(doc.modl.pos).length&&doc.modl.autorun&&doc.modl.view==='split'&&!doc.modl.rawText,
  parseLegacy(text){let value;try{value=JSON.parse(text);}catch{return undefined;}if(value&&typeof value.src==='string'){if(value.format&&value.format!=='hashbin-diagram')throw Error('This saved document is not a MODL diagram.');if(value.version!==undefined&&value.version!==1)throw Error('Unsupported saved document version.');return type.normalize(value);}return undefined;}
 };
-export const fromDocument=value=>{const doc=type.normalize(value);return{src:doc.src,pos:doc.modl.pos,...doc.modl.autorun?{}:{autorun:false},...doc.modl.view!=='split'?{view:doc.modl.view}:{}};};
-export const serializeLegacy=value=>{const doc=fromDocument(value);return kit.bounded(JSON.stringify({format:'hashbin-diagram',version:1,src:doc.src,pos:doc.pos,...doc.autorun===false||doc.view?{modl:{...doc.autorun===false?{autorun:false}:{},...doc.view?{view:doc.view}:{}}}:{}}),config.maxBytes);};
+export const fromDocument=value=>{const doc=type.normalize(value);return{src:doc.src,pos:doc.modl.pos,...doc.modl.rawText?{rawText:true}:{},...doc.modl.autorun?{}:{autorun:false},...doc.modl.view!=='split'?{view:doc.modl.view}:{}};};
+export const serializeLegacy=value=>{const doc=fromDocument(value);return kit.bounded(JSON.stringify({format:'hashbin-diagram',version:1,src:doc.src,pos:doc.pos,...doc.autorun===false||doc.view||doc.rawText?{modl:{...doc.rawText?{rawText:true}:{},...doc.autorun===false?{autorun:false}:{},...doc.view?{view:doc.view}:{}}}:{}}),config.maxBytes);};
 export const encodeState=value=>kit.bounded('h1='+kit.encode64(kit.bytes(JSON.stringify(fromDocument(value)))),Math.ceil(config.maxBytes*4/3)+8);
 const legacyWriter=(doc,{url,run,view})=>{const value=fromDocument(doc);value.autorun=run??doc.modl.autorun;value.view=view??doc.modl.view;url.hash=encodeState(value);if(value.autorun===false)url.searchParams.set('run','0');if(value.view!=='split')url.searchParams.set('view',value.view);return url.href;};
-export const urlState=kit.createUrlState({config,type,legacyWriter});
+const baseUrlState=kit.createUrlState({config,type,legacyWriter});
+function stripMarks(href){const u=new URL(href),parts=new URLSearchParams(u.hash.slice(1));if(parts.has('mark')){parts.delete('mark');u.hash=parts.toString();}return u.href;}
+function carryMarks(href,base){const marks=new URLSearchParams(new URL(base??globalThis.location?.href??href).hash.slice(1)).get('mark');if(!marks)return href;const u=new URL(href);u.hash+='&mark='+encodeURIComponent(marks);return u.href;}
+export const urlState={...baseUrlState,parse:href=>baseUrlState.parse(stripMarks(href)),build:(doc,options={})=>{const result=baseUrlState.build(doc,options);return{...result,href:carryMarks(result.href,options.url)};}};
 export const documents={...urlState.documents,serialize:serializeLegacy,parse:text=>fromDocument(urlState.documents.parse(text))};
 export function transactions(storage,clientId=config.hashbinClientId){if(!storage)return;const scoped=kit.createStorage({prefix:config.storagePrefix,storage}),owned=key=>key.startsWith('hashbin:publish:'+clientId+':');return{getItem(key){const value=scoped.getItem(key);if(value!==null||!owned(key))return value;try{return storage.getItem(key);}catch{return null;}},setItem:(key,value)=>scoped.setItem(key,value),removeItem(key){scoped.removeItem(key);if(owned(key))try{storage.removeItem(key);}catch{}}};}
 export class HashBinStore extends kit.HashBinStore{

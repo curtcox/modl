@@ -1,11 +1,13 @@
 {
   "dependencies": {
-    "js/editor.js": "53b6c7ecf8f61b689b44e37f09f3e028c5ef9252dab4bb69eece9c89539256f3",
-    "js/fragment-config.js": "ee0dbd58eb2a52589b7e43002728e43967bad44d9cf5c3c444c021856354ba83",
+    "js/parse.js": "587fda4548814761f62620f4ac8b5a91ade0606eaa5b3fa52e9162ef343da074",
+    "js/diagram-features.js": "fea251f948d17b9984528dcc10b1edd3b04282848882bc55851660d561e3ba19",
+    "js/editor.js": "22e8ee2003cf82cfc3728154fafd1c585ef4930bc666ff0a52863ab44130cdce",
+    "js/fragment-config.js": "afdfa8ed95d7c049e4c833db09b71b1170076a63c980e800d7f99b41f6fb3c50",
     "js/gallery-catalog.js": "b8abacf2ccabd8d46f218d2a08b2c79ad178076d3efe73cd2ab270d132120d72",
-    "engine-integrity.json": "26274edf5ca6c5c78c8b9d1e0dc6a703de9580c8b46793cce46e3cb4e3a466e5"
+    "engine-integrity.json": "5fbaac420a16ce9350d4631330792129d148d1dcf1be51d251a37093beca80b5"
   },
-  "renderer": "79ab97f367ed4c9e092b4f96b8c893acba96a2e4c3678b35c4adf87725c42953",
+  "renderer": "96c42576c369f61dbb70b24f346f2a57f490094e9307432787a4ec7e0030996e",
   "examples": {
     "diagram-1": {
       "document": "76ae0761a88da430177cd1a80ead63b39b7994f56d4d0a40bfed0bb506fa35df",
@@ -53,7 +55,7 @@
     },
     "diagram-12": {
       "document": "cc3bd137a9148b2653442bac471bf225df0827928b964888b9501016a374d6cd",
-      "cover": "a4233f42abfd2abb4c95f4f4dec810ad35229d83a89978cd9329f280d30f5376"
+      "cover": "0b9cd3630eb9a5b05700d27c36920f7bf693f9154de8b4fa1211e989ae646d1a"
     }
   }
 }

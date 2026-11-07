@@ -27,6 +27,7 @@ const OUT_DIR = join(ROOT, "docs");
 const EDITOR = "../";
 
 const PAGES = [
+  { slug: "pipeline-features", title: "Ports, groups and source views" },
   { slug: "index", title: "Overview" },
   { slug: "structure", title: "Source structure" },
   { slug: "nodes", title: "Nodes" },
