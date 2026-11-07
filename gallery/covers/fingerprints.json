@@ -1,13 +1,14 @@
 {
   "dependencies": {
     "js/parse.js": "587fda4548814761f62620f4ac8b5a91ade0606eaa5b3fa52e9162ef343da074",
+    "js/render.js": "20f8a8d7421d4204a59c1a5e33c092b181e1f87fb6c3063b581b635262ce8a7b",
     "js/diagram-features.js": "fea251f948d17b9984528dcc10b1edd3b04282848882bc55851660d561e3ba19",
-    "js/editor.js": "22e8ee2003cf82cfc3728154fafd1c585ef4930bc666ff0a52863ab44130cdce",
+    "js/editor.js": "8d687db93c51ebed37f4fad265029cf03e48eed77265aa2643a035f187be71e7",
     "js/fragment-config.js": "afdfa8ed95d7c049e4c833db09b71b1170076a63c980e800d7f99b41f6fb3c50",
     "js/gallery-catalog.js": "b8abacf2ccabd8d46f218d2a08b2c79ad178076d3efe73cd2ab270d132120d72",
-    "engine-integrity.json": "5fbaac420a16ce9350d4631330792129d148d1dcf1be51d251a37093beca80b5"
+    "engine-integrity.json": "0ded08a7ccb81c8d57a37a3d70ad6b68b7ec252a508236d5f908ac1e27380c90"
   },
-  "renderer": "96c42576c369f61dbb70b24f346f2a57f490094e9307432787a4ec7e0030996e",
+  "renderer": "9a95949a031900a3aede9a6c577dce45c048986ba7967c6b0a4291d7c9a061ea",
   "examples": {
     "diagram-1": {
       "document": "76ae0761a88da430177cd1a80ead63b39b7994f56d4d0a40bfed0bb506fa35df",

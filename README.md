@@ -91,3 +91,12 @@ Ports (`a[err] -> b[3]`), nested brace groups, additional flowchart shapes,
 double edges, layered layout and source display controls are described in
 [Ports, groups and source views](docs/pipeline-features.html). The standalone
 parser lives in `js/parse.js`; its source spans use UTF-16 column offsets.
+
+## Embedding the renderer
+
+`js/render.js` exports `renderDiagram(svg, model, options)` and `nodeScale`.
+Parse with `parseSource` from `js/parse.js`, then pass positions, optional review
+marks and viewport. The returned `viewportGroup` lets hosts update the camera.
+Drag, pan and link callbacks belong to the host; `imageInfo` supplies cached
+image dimensions. Rendering itself performs no storage, network or navigation.
+The editor uses this same module, preserving native shapes and styling.
