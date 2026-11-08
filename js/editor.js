@@ -2,7 +2,7 @@ import {renderDiagram, nodeScale} from './render.js';
 import {layeredPositions, groupBounds, extraShape, marksFromURL} from './diagram-features.js';
 import { NODE_SIZES, NODE_SHAPES, EDGE_STYLES, COLORS, lexLine, parseAttrs, parseSource, normalizeUrl } from './parse.js';
 import{config,type,fromDocument,serializeLegacy,encodeState,urlState,documents,HashBinStore}from'./fragment-config.js';
-import{LocalDrafts,createStorage,HashBinPanel,createShell,mountMobileTabs,createShareDialog,createQrDialog,OfflineClient}from'../vendor/fragment-kit-v0.3.4/src/index.js';
+import{LocalDrafts,createStorage,HashBinPanel,createShell,mountMobileTabs,createShareDialog,createQrDialog,OfflineClient}from'../vendor/fragment-kit-v0.3.5/src/index.js';
 function optionalStorage(kind){try{return globalThis[kind];}catch{return undefined;}}
 function localOverride(name,fallback){const value=new URL(location.href).searchParams.get(name);try{const url=new URL(value);if(url.protocol==='http:'&&['localhost','127.0.0.1'].includes(url.hostname))return url.origin;}catch{}return fallback;}
 const API_BASE=localOverride('api','https://hashbin.org'),CONTENT_BASE=localOverride('content','https://256t.us'),IS_LOCAL_API=API_BASE!=='https://hashbin.org';
@@ -12,15 +12,16 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
 (async()=>{
  const originalHeader=document.querySelector('.topbar');
  const shell=createShell({config,container:document.querySelector('.app')});
- const renderButton=document.createElement('button');renderButton.id='render';renderButton.textContent='Render';
+ const renderButton=document.createElement('button');renderButton.id='render';renderButton.textContent='Render once';renderButton.hidden=true;shell.drawer.body.append(renderButton);
  const shareButton=document.getElementById('btnCopy'),qrButton=document.getElementById('btnQr');shareButton.textContent='Share';qrButton.textContent='QR';
- shell.toolbar.append(renderButton,shareButton,qrButton);
+ shell.toolbar.append(shareButton,qrButton);
  for(const id of ['btnViewSource','btnViewDiagram','btnViewHelp','btnViewSplit','btnCommit','btnReset'])shell.drawer.body.append(document.getElementById(id));
- shell.status.append(originalHeader.querySelector('.status'));originalHeader.remove();
+ for(const id of ['btnViewSource','btnViewDiagram','btnViewSplit'])document.getElementById(id).hidden=true;
+ originalHeader.querySelector('#parseStatus')?.setAttribute('data-fk-primary-status','');shell.status.append(originalHeader.querySelector('.status'));originalHeader.remove();
  document.getElementById('saveDialog').remove();document.getElementById('qrDialog').remove();
  shell.header.querySelector('.fk-more').id='more-toggle';
  const drafts=new LocalDrafts({storage:createStorage({prefix:config.storagePrefix}),key:'draft',serialize:value=>JSON.stringify(fromDocument(value)),parse:text=>type.normalize(JSON.parse(text))});
- let initialized=false,autoRun=true,viewMode='split',mobileTabs,navigationRevision=0,lastNavigation,qrSave=false,gestureFingerprint;
+ let syncingView=false,initialized=false,autoRun=true,viewMode='split',mobileTabs,navigationRevision=0,lastNavigation,qrSave=false,gestureFingerprint;
 
   // -----------------------------
   // Reserved vocab
@@ -168,8 +169,9 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
     $btnViewDiagram.setAttribute("aria-pressed", String(is("diagram")));
     $btnViewHelp.setAttribute("aria-pressed", String(is("help")));
     $btnViewSplit.setAttribute("aria-pressed", String(is("split")));
-    mobileTabs?.select(mode==='diagram'?1:0);
+    syncingView=true;mobileTabs?.select(mode==='split'?'split':mode==='diagram'?1:0);syncingView=false;
     if(persist&&initialized){drafts.attempt(snapshotState(),true);syncHash();shell.drawer.dialog.close();}
+    if(initialized&&autoRun)requestAnimationFrame(renderAll);
   }
 
   $btnViewSource.addEventListener("click", () => setViewMode("source",true));
@@ -217,10 +219,10 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
    if(pointer!==undefined)try{$svg.releasePointerCapture(pointer);}catch{}$svgWrap.classList.remove('panning');
   }
   function applyDocument(value,cid=null,options={}){
-   const doc=type.normalize(value);autoRun=options.run??doc.modl.autorun;
+   const doc=type.normalize(value);autoRun=options.run??doc.modl.autorun;renderButton.hidden=autoRun;
    setViewMode(options.view??doc.modl.view);
    applyState(fromDocument(doc),{fromHash:true});
-   if(autoRun)renderAll();else{$svg.replaceChildren();diagram=null;$parseStatus.textContent='Press Render';}
+   if(autoRun)renderAll();else{$svg.replaceChildren();diagram=null;$parseStatus.textContent='Automatic rendering is off — use Render once in More';}
    saved=cid?{cid,payload:savePayload(snapshotState())}:null;updateSavedState();
   }
   const pendingOptions=new Map();
@@ -234,15 +236,19 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
   shareButton.onclick=()=>{try{share.open();document.getElementById('share-run').checked=autoRun;document.getElementById('share-run').dispatchEvent(new Event('change'));}catch(error){showLoadError(error.message);}};
   const qr=createQrDialog({config,urlState,onLoad:outcome=>{const incoming=new URL(outcome.kind==='cid'?urlState.link(location.href,outcome.cid):outcome.href),url=new URL(location.href);url.search=incoming.search;url.hash=incoming.hash;history.pushState(null,'',url);return openURL(url.href);},onSave:()=>{qrSave=true;qr.dialog.close();return panel.openSave();}});
   qrButton.onclick=()=>{try{qr.open(urlState.build(snapshotState({flush:true}),{run:autoRun,view:viewMode==='split'?undefined:viewMode}).href);}catch(error){showLoadError(error.message);}};
-  renderButton.onclick=()=>{try{state=fromDocument(type.normalize({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun,view:viewMode}));renderAll();syncHash();}catch(error){showLoadError(error.message);}};
-  document.getElementById('btnReset').onclick=()=>{navigationRevision++;panel.cancelLoad();cancelInteractions();drafts.opened();autoRun=true;setViewMode('split');saved=null;applyState(makeDefaultState());renderAll();drafts.attempt(snapshotState(),true);syncHash();shell.drawer.dialog.close();};
+  renderButton.onclick=()=>{try{state=fromDocument(type.normalize({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun,view:viewMode}));renderAll();syncHash();shell.drawer.dialog.close();}catch(error){showLoadError(error.message);}};
+  document.getElementById('btnReset').onclick=()=>{navigationRevision++;panel.cancelLoad();cancelInteractions();drafts.opened();autoRun=true;renderButton.hidden=true;setViewMode('split');saved=null;applyState(makeDefaultState());renderAll();drafts.attempt(snapshotState(),true);syncHash();shell.drawer.dialog.close();};
   document.getElementById('btnCommit').onclick=()=>{drafts.attempt(snapshotState({flush:true}),true);syncHash({replace:false});shell.drawer.dialog.close();};
   drafts.mount(shell.drawer.body,doc=>{navigationRevision++;panel.cancelLoad();cancelInteractions();applyDocument(doc);syncHash();},doc=>doc.src);
   const download=(blob,name)=>{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);};
   const backup=document.createElement('button');backup.textContent='Download diagram';backup.onclick=()=>{try{download(new Blob([savePayload(snapshotState({flush:true}))],{type:'application/json'}),'diagram.json');}catch(error){showLoadError(error.message);}};shell.drawer.body.append(backup);
   const fileLabel=document.createElement('label'),file=document.createElement('input');fileLabel.textContent='Open diagram file';file.type='file';file.accept='.json,.modl,.txt';file.setAttribute('aria-label','Open diagram file');fileLabel.append(file);shell.drawer.body.append(fileLabel);
   file.onchange=async()=>{const selected=file.files[0];file.value='';if(!selected)return;const revision=++navigationRevision;panel.cancelLoad();cancelInteractions();try{if(selected.size>config.maxBytes)throw Error('Diagram file exceeds 5 MiB.');const data=await selected.slice(0,config.maxBytes+1).arrayBuffer();if(revision!==navigationRevision)return;const value=documents.parse(new TextDecoder('utf-8',{fatal:true}).decode(data));drafts.opened();applyDocument(value);syncHash();shell.drawer.dialog.close();}catch(error){if(revision===navigationRevision)showLoadError(error.message);}};
-  mobileTabs=mountMobileTabs({container:shell.toolbar,panels:[{label:'Code',panel:document.querySelector('.left')},{label:'Preview',panel:document.querySelector('.right')}],onChange:index=>{if(initialized&&autoRun&&index===1&&matchMedia('(max-width:767px)').matches)requestAnimationFrame(renderAll);}});
+  mobileTabs=mountMobileTabs({desktop:true,container:shell.toolbar,panels:[{label:'Text',panel:document.querySelector('.left')},{label:'Diagram',panel:document.querySelector('.right')}],onChange:index=>{const next=index===-1?'split':index===1?'diagram':'source';if(initialized&&!syncingView&&next!==viewMode)setViewMode(next,true);}});
+  const textTab=shell.toolbar.querySelector('[role=tab]');
+  const leaveHelp=()=>{if(viewMode==='help')setViewMode('source',true);};
+  textTab.addEventListener('click',leaveHelp);textTab.addEventListener('keydown',event=>{if(event.key==='Home')leaveHelp();});
+  mobileTabs.select(viewMode==='split'?'split':viewMode==='diagram'?1:0);
 
   // -----------------------------
   // Layout + Rendering (SVG)
@@ -606,7 +612,7 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
     else if(intent.kind==='cid'){panel.status.textContent='Loading from HashBin…';const doc=await store.load(intent.cid);if(revision!==navigationRevision)return;applyDocument(doc,intent.cid,options);panel.status.textContent='Loaded from HashBin.';}
     else if(intent.kind==='example'){
      const{catalog}=await import('./gallery-catalog.js');if(revision!==navigationRevision)return;const{legacyExamples}=await import('./legacy-examples.js');if(revision!==navigationRevision)return;const example=catalog.find(example=>example.id===intent.id)??(legacyExamples[intent.id]?{document:legacyExamples[intent.id]}:null);if(!example)throw Error('Unknown diagram example.');applyDocument(example.document,null,options);syncHash();
-    }else if(intent.kind==='none'){autoRun=true;setViewMode('split');applyState(makeDefaultState());renderAll();syncHash();}
+    }else if(intent.kind==='none'){applyDocument({...makeDefaultState(),autorun:intent.run,view:options.view??(matchMedia('(max-width:767px)').matches?'source':'split')},null,options);syncHash();}
     else throw Error('This diagram link is not supported.');
    }catch(error){if(revision===navigationRevision)showLoadError(error.message);}
   }

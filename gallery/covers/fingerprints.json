@@ -3,8 +3,8 @@
     "js/parse.js": "587fda4548814761f62620f4ac8b5a91ade0606eaa5b3fa52e9162ef343da074",
     "js/render.js": "20f8a8d7421d4204a59c1a5e33c092b181e1f87fb6c3063b581b635262ce8a7b",
     "js/diagram-features.js": "fea251f948d17b9984528dcc10b1edd3b04282848882bc55851660d561e3ba19",
-    "js/editor.js": "8d687db93c51ebed37f4fad265029cf03e48eed77265aa2643a035f187be71e7",
-    "js/fragment-config.js": "afdfa8ed95d7c049e4c833db09b71b1170076a63c980e800d7f99b41f6fb3c50",
+    "js/editor.js": "feb91f2b825bc27d4030627512f67730070291abcf0f4bb0fee54dae1121df34",
+    "js/fragment-config.js": "e3ea65ef6fcfbb05c9e3103db3f4ed444a7c350d8e27dfbb096b24d2e8641097",
     "js/gallery-catalog.js": "b8abacf2ccabd8d46f218d2a08b2c79ad178076d3efe73cd2ab270d132120d72",
     "engine-integrity.json": "0ded08a7ccb81c8d57a37a3d70ad6b68b7ec252a508236d5f908ac1e27380c90"
   },
@@ -12,51 +12,51 @@
   "examples": {
     "diagram-1": {
       "document": "76ae0761a88da430177cd1a80ead63b39b7994f56d4d0a40bfed0bb506fa35df",
-      "cover": "75da33fb3eaf0a7800f59140e63e17551ea49e866e10ac97e4bcf5ca7def56c2"
+      "cover": "6594a850ce1a2ddf2c66d15a1089c12e13ade7d79a819f93c221edda16fe23a1"
     },
     "diagram-2": {
       "document": "775f6213aac093a465fd59e50a1c46c4dc4d0ee71d9fa9423891492cb097dd47",
-      "cover": "de3fd31f0f4e6593fb4369410e0f6bf53d391df0cc049e4896f46eb7eae197e6"
+      "cover": "cfa9c381a88cc15163579fe01d830aff6fc46f4c8e27b8d7c9871f98bec3f170"
     },
     "diagram-3": {
       "document": "1931e3a45b9aec83a8a5e7a1684937477b2d9d7578d4037fecf9dcc7e3db83a3",
-      "cover": "c8617027ba55e9e64586805335a4165a51e197defa78e9ee7493240f92f1a678"
+      "cover": "653366a1975f6a9fcdc841440587d3cbc4e776545e3078403ad4c15e763698a2"
     },
     "diagram-4": {
       "document": "3d160e5693b97a5e16bdcfe9139eb5ca4944a9724afb99beaa468e070ba7b31b",
-      "cover": "5fd5634820c1ec773fcd7c992c8ae9594c320f419d638fc70fd3cab577eb2713"
+      "cover": "6f469d5bacfad36d946e06ee7e0b29cf5ff6be1b73dd5a027836f5adc129cbda"
     },
     "diagram-5": {
       "document": "594ce8d3053debb9ec4c40c7b5c72bfe1a0b6588c7d0bc5fde8a5e026443d32f",
-      "cover": "48909b0d57eee4ce5265fd6e5c11636020d3b55a77d17154bf3a43cb6a61c329"
+      "cover": "089f81541fb20189d014214070e20e9ee3326eecf9ffb8524ce8426082c2fcdd"
     },
     "diagram-6": {
       "document": "3a6ceac85f543ebd725dcd1506f2f93385a2297e2afefc527f95c6af179b7283",
-      "cover": "55c5cecb90312863742b048c795f8646dfe452a757b72ad146b1434d81f30fdb"
+      "cover": "649701fe82115a9356e2c7e6a1f24d1eddd6f67823abcba67478e2663eafa7e0"
     },
     "diagram-7": {
       "document": "f28c273cb80680ebe6b6cff6c960abf8eecac889a7ef9a271745b3dbc63307aa",
-      "cover": "0f2c23c092434e67078071144879c2c3b56802cdc2cbd4c10c9702616b61bd47"
+      "cover": "7e58763fd45843b9f3b333d8fcbf1bced9b45a0465eef3ed31e173d9372a9807"
     },
     "diagram-8": {
       "document": "896ea9fbea1876b3fa1569d2a58a317cb0bc71e362322e1950e464d5eeadafda",
-      "cover": "a9cd129a6cf2717023e541a9c3344f41a1d9828a36e8c38edfa18224abf63cb0"
+      "cover": "9bd1f7f348473eed039d36c175f77ef0ecaa16837d7fe5653d0390726a92ec74"
     },
     "diagram-9": {
       "document": "78c3647afe05f8000545f148061e91dcc6b3221befea81c65804f2c8cd2f9e68",
-      "cover": "889a27dd4edb6cd0089bc92ef0826b2fdbff986bdb6a0ee1998b95b033f079ed"
+      "cover": "9cbcf8185e026b5c4167a759e305286a886896c13125db978972fd26d9752694"
     },
     "diagram-10": {
       "document": "cd11eee75cad6139202a9ab6e4b483e7679285c5923d19eeb01ebfcaf999769c",
-      "cover": "082f3df61f330e258f3d0a7dcf70375226090b8584f14b4c01cc79cb50bc71d4"
+      "cover": "b72d8d4813a8f10f532b953927d4446bf94b4f2a4c6b4159c3ea8e219bc87a2c"
     },
     "diagram-11": {
       "document": "bf8eb4148e2544e3f6a299ed19dc317ab1581b9059159d12c75d392c8d3e8ab4",
-      "cover": "ff8d5a3e647ad27388c7c4aff12ebec92a8d39a0908a1b44851084fc6e80c294"
+      "cover": "b1f27d42ddc59e277e615fe763f4d936098e284e87d98af9187483ee45cebe35"
     },
     "diagram-12": {
       "document": "cc3bd137a9148b2653442bac471bf225df0827928b964888b9501016a374d6cd",
-      "cover": "0b9cd3630eb9a5b05700d27c36920f7bf693f9154de8b4fa1211e989ae646d1a"
+      "cover": "cae2398b5667621032774c83a52b5bf1cea275ce8a7a69f47a428cf55d295bf7"
     }
   }
 }
