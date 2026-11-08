@@ -1,6 +1,6 @@
 import{test}from'node:test';import assert from'node:assert/strict';
 import{config,type,positions,fromDocument,serializeLegacy,encodeState,urlState,documents,HashBinStore,transactions}from'../../js/fragment-config.js';
-import{computeCID,encode64,bytes,compress}from'../../vendor/fragment-kit-v0.3.4/src/index.js';
+import{computeCID,encode64,bytes,compress}from'../../vendor/fragment-kit-v0.3.5/src/index.js';
 const value={src:'a -> b',pos:{b:[12.125,-7.375],a:[0,0]}};
 test('legacy h1 round trips sorted fractional positions and Unicode',()=>{const doc={...value,src:'a café ☕'};assert.deepEqual(fromDocument(urlState.parse('https://modl.hashbin.page/#'+encodeState(doc)).doc),fromDocument(doc));assert.deepEqual(Object.keys(positions(value.pos)),['a','b']);});
 test('legacy wire bytes retain untyped envelope and key order',()=>assert.equal(serializeLegacy(value),'{"format":"hashbin-diagram","version":1,"src":"a -> b","pos":{"a":[0,0],"b":[12.125,-7.375]}}'));

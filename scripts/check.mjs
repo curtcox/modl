@@ -7,5 +7,5 @@ for(const[key,value]of Object.entries({engineSha256:engine,vocabularySha256:voca
 async function walk(dir){for(const entry of await fs.readdir(dir,{withFileTypes:true})){const file=dir+'/'+entry.name;if(entry.isDirectory())await walk(file);else if(/\.(?:js|mjs|cjs)$/.test(file))execFileSync(process.execPath,['--check',file]);}}
 for(const dir of['js','scripts','tests'])await walk(dir);
 for(const script of['build-docs','gallery-catalog','render-kit-gallery','update-offline'])execFileSync(process.execPath,['scripts/'+script+'.mjs','--check'],{stdio:'inherit'});
-execFileSync(process.execPath,['vendor/fragment-kit-v0.3.4/tools/vendor-sync.mjs','--check','--target','.'],{stdio:'inherit'});
+execFileSync(process.execPath,['vendor/fragment-kit-v0.3.5/tools/vendor-sync.mjs','--check','--target','.'],{stdio:'inherit'});
 console.log('Pinned engine, renderer and vocabulary verified; generated assets and immutable kit are current.');

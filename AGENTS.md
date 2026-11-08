@@ -6,7 +6,7 @@ scripts/check.mjs verifies those blocks and vocabulary against engine-integrity.
 Preserve fractional positions, h1 links, untyped legacy envelopes and native SVG export.
 
 Shared URL, Publish, QR, drafts, mobile and offline contracts:
-vendor/fragment-kit-v0.3.4/docs/contracts.md. Explicit links win over drafts.
+vendor/fragment-kit-v0.3.5/docs/contracts.md. Explicit links win over drafts.
 Bound inputs before decoding, verify CIDs and reject stale asynchronous loads.
 Publish must enter synchronously from the confirm click after SDK initialization.
 Keep credentials on HashBin; prefix all storage and caches. Do not edit pinned vendor bytes.

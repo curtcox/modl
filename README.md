@@ -60,10 +60,14 @@ The production app is [https://modl.hashbin.page/](https://modl.hashbin.page/). 
 
 ## Shared controls
 
-MODL pins Fragment Kit v0.3.4 as native modules. Render, Share and QR sit in the
-toolbar. More holds source/diagram/help/split views, HashBin load/save, explicit
-draft recovery, diagram backup files and offline repair/update. On phones Code
-and Preview are tabs. Docs and Gallery are available in the header and More.
+MODL uses released Fragment Kit v0.3.5 as native modules. A single compact bar holds
+Text, Diagram and Split views, Share and QR. More holds language help, HashBin
+load/save, explicit draft recovery, backup files and offline repair/update.
+Automatic rendering needs no Render button. Links with `run=0` keep rendering
+off and offer **Render once** inside More. Close remains visible above a
+scrollable dialog body. Phone status details live in More.
+Docs and Gallery are available in More and on wide desktop headers.
+Current deployment evidence is recorded in the [shared rollout status](https://github.com/curtcox/Tools-for-pages-with-state-in-URL-fragments/blob/main/todo/rollout-status.md).
 The gallery keeps the twelve original documentation gallery diagrams and their
 positions; covers use MODL's original SVG renderer.
 
