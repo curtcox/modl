@@ -4,3 +4,6 @@
 .main[data-fk-view="single"]>.left:not([hidden]),.main[data-fk-view="single"]>.right:not([hidden]){width:100%;flex:1;border-right:0}
 @media(max-width:767px){.main[data-fk-view="single"]>.left:not([hidden]),.main[data-fk-view="single"]>.right:not([hidden]){display:flex!important}.canvasControls{flex-wrap:wrap}.fk-status .status{flex-wrap:wrap}.svgWrap{min-height:0}.left textarea{min-height:0}.main[data-fk-view="split"]>.left,.main[data-fk-view="split"]>.right{display:flex!important;min-width:0}.help .grid{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+
+/* Keep the three view tabs and sharing actions on one phone toolbar row across system fonts. */
+@media(max-width:767px){.fk-header.fk-compact>.fk-toolbar{gap:4px}.fk-header.fk-compact>.fk-toolbar button{padding:8px;font-size:14px;min-width:44px}}
