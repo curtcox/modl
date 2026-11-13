@@ -1,8 +1,10 @@
+import {mountClientAi,aiCallback} from './ai-client.js';
+if(aiCallback()) await new Promise(()=>{});
 import {renderDiagram, nodeScale} from './render.js';
 import {layeredPositions, groupBounds, extraShape, marksFromURL} from './diagram-features.js';
 import { NODE_SIZES, NODE_SHAPES, EDGE_STYLES, COLORS, lexLine, parseAttrs, parseSource, normalizeUrl } from './parse.js';
 import{config,type,fromDocument,serializeLegacy,encodeState,urlState,documents,HashBinStore}from'./fragment-config.js';
-import{LocalDrafts,createStorage,HashBinPanel,createShell,mountMobileTabs,createShareDialog,createQrDialog,OfflineClient}from'../vendor/fragment-kit-v0.3.5/src/index.js';
+import{LocalDrafts,createStorage,HashBinPanel,createShell,mountMobileTabs,createShareDialog,createQrDialog,OfflineClient}from'../vendor/fragment-kit-v0.4.3/src/index.js';
 function optionalStorage(kind){try{return globalThis[kind];}catch{return undefined;}}
 function localOverride(name,fallback){const value=new URL(location.href).searchParams.get(name);try{const url=new URL(value);if(url.protocol==='http:'&&['localhost','127.0.0.1'].includes(url.hostname))return url.origin;}catch{}return fallback;}
 const API_BASE=localOverride('api','https://hashbin.org'),CONTENT_BASE=localOverride('content','https://256t.us'),IS_LOCAL_API=API_BASE!=='https://hashbin.org';
@@ -10,6 +12,7 @@ const clientId=IS_LOCAL_API?new URL(location.href).searchParams.get('client_id')
 const callback=new URL(location.href);callback.hash='';callback.pathname=callback.pathname.replace(/index\.html$/,'');for(const key of [...callback.searchParams.keys()])if(!IS_LOCAL_API||!['api','content','client_id'].includes(key))callback.searchParams.delete(key);
 const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:optionalStorage('localStorage'),apiBase:API_BASE,contentBase:CONTENT_BASE,...IS_LOCAL_API?{loadSDK:()=>import(API_BASE+'/sdk/v0.4.0/hashbin.js'),fetchSource:(url,options)=>fetch(url.replace('https://256t.us/',CONTENT_BASE+'/'),options)}:{}});
 (async()=>{
+ let aiHold=false;
  const originalHeader=document.querySelector('.topbar');
  const shell=createShell({config,container:document.querySelector('.app')});
  const renderButton=document.createElement('button');renderButton.id='render';renderButton.textContent='Render once';renderButton.hidden=true;shell.drawer.body.append(renderButton);
@@ -192,10 +195,10 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
   function highlightPragmas(){pragmaPreview.replaceChildren();for(const line of $src.value.split(/\r?\n/)){const comment=lexLine(line).find(p=>p.type==='comment');if(comment&&/^#gl(?:\s|$)/.test(comment.raw)){const mark=document.createElement('mark');mark.textContent=comment.raw;pragmaPreview.append(mark,'\n');}}}
   function snapshotState({flush=false}={}){
    if(flush)clearTimeout(parseTimer);
-   if(flush&&autoRun&&state.src!==$src.value){state=fromDocument(type.normalize({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun,view:viewMode}));renderAll();}
-   return fromDocument(type.normalize({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun,view:viewMode}));
+   if(flush&&autoRun&&state.src!==$src.value){state=fromDocument(type.normalize({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun&&!aiHold,view:viewMode}));renderAll();}
+   return fromDocument(type.normalize({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun&&!aiHold,view:viewMode}));
   }
-  const fingerprint=()=>JSON.stringify({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun,view:viewMode});
+  const fingerprint=()=>JSON.stringify({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun&&!aiHold,view:viewMode});
   function updateSavedState(){
    $savedState.textContent='Not saved';$savedState.className='savedState';if(!saved)return;
    let dirty=true;try{dirty=savePayload(snapshotState())!==saved.payload;}catch{}
@@ -207,7 +210,7 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
    try{
     const snapshot=snapshotState(),payload=savePayload(snapshot);
     if(gestureFingerprint&&payload!==gestureFingerprint)drafts.attempt(snapshot,true);else drafts.attempt(snapshot);
-    let href=urlState.build(snapshot,{url:location.href,run:autoRun,view:viewMode==='split'?undefined:viewMode}).href;
+    let href=urlState.build(snapshot,{url:location.href,run:autoRun&&!aiHold,view:viewMode==='split'?undefined:viewMode}).href;
     if(saved&&payload===saved.payload)href=urlState.link(href,saved.cid);
     if(replace)history.replaceState(null,'',href);else history.pushState(null,'',href);
     lastNavigation=location.href;updateHashStatus();updateSavedState();
@@ -219,6 +222,7 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
    if(pointer!==undefined)try{$svg.releasePointerCapture(pointer);}catch{}$svgWrap.classList.remove('panning');
   }
   function applyDocument(value,cid=null,options={}){
+   aiUI?.cancel();aiHold=false;
    const doc=type.normalize(value);autoRun=options.run??doc.modl.autorun;renderButton.hidden=autoRun;
    setViewMode(options.view??doc.modl.view);
    applyState(fromDocument(doc),{fromHash:true});
@@ -235,8 +239,8 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
   const share=createShareDialog({urlState,getSnapshot:()=>snapshotState({flush:true}),onSave:()=>panel.openSave()});
   shareButton.onclick=()=>{try{share.open();document.getElementById('share-run').checked=autoRun;document.getElementById('share-run').dispatchEvent(new Event('change'));}catch(error){showLoadError(error.message);}};
   const qr=createQrDialog({config,urlState,onLoad:outcome=>{const incoming=new URL(outcome.kind==='cid'?urlState.link(location.href,outcome.cid):outcome.href),url=new URL(location.href);url.search=incoming.search;url.hash=incoming.hash;history.pushState(null,'',url);return openURL(url.href);},onSave:()=>{qrSave=true;qr.dialog.close();return panel.openSave();}});
-  qrButton.onclick=()=>{try{qr.open(urlState.build(snapshotState({flush:true}),{run:autoRun,view:viewMode==='split'?undefined:viewMode}).href);}catch(error){showLoadError(error.message);}};
-  renderButton.onclick=()=>{try{state=fromDocument(type.normalize({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun,view:viewMode}));renderAll();syncHash();shell.drawer.dialog.close();}catch(error){showLoadError(error.message);}};
+  qrButton.onclick=()=>{try{qr.open(urlState.build(snapshotState({flush:true}),{run:autoRun&&!aiHold,view:viewMode==='split'?undefined:viewMode}).href);}catch(error){showLoadError(error.message);}};
+  renderButton.onclick=()=>{aiHold=false;renderButton.hidden=autoRun;try{state=fromDocument(type.normalize({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun&&!aiHold,view:viewMode}));renderAll();syncHash();shell.drawer.dialog.close();}catch(error){showLoadError(error.message);}};
   document.getElementById('btnReset').onclick=()=>{navigationRevision++;panel.cancelLoad();cancelInteractions();drafts.opened();autoRun=true;renderButton.hidden=true;setViewMode('split');saved=null;applyState(makeDefaultState());renderAll();drafts.attempt(snapshotState(),true);syncHash();shell.drawer.dialog.close();};
   document.getElementById('btnCommit').onclick=()=>{drafts.attempt(snapshotState({flush:true}),true);syncHash({replace:false});shell.drawer.dialog.close();};
   drafts.mount(shell.drawer.body,doc=>{navigationRevision++;panel.cancelLoad();cancelInteractions();applyDocument(doc);syncHash();},doc=>doc.src);
@@ -570,6 +574,7 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
   }
 
   function renderAll() {
+    if(aiHold)return;
     highlightPragmas();
     const parsed = parseSource(state.src);
 
@@ -618,15 +623,16 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
   }
   $src.addEventListener('input',()=>{
    const revision=++navigationRevision;panel.cancelLoad();clearTimeout(parseTimer);saved=null;
-   drafts.attempt({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun,view:viewMode},true);
+   drafts.attempt({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun&&!aiHold,view:viewMode},true);
    parseTimer=setTimeout(()=>{if(revision!==navigationRevision)return;try{type.normalize({src:$src.value,pos:state.pos});if(autoRun){state.src=$src.value;renderAll();}syncHash();}catch(error){showLoadError(error.message);}},160);
   });
   $svg.addEventListener('pointerdown',()=>{navigationRevision++;panel.cancelLoad();try{gestureFingerprint=savePayload(snapshotState());}catch{}},true);
   for(const name of ['pointerup','pointercancel'])$svg.addEventListener(name,()=>queueMicrotask(()=>{gestureFingerprint=null;}));
   window.addEventListener('resize',()=>{if(autoRun)renderAll();});
   const navigate=()=>{if(lastNavigation!==location.href)void openURL(location.href);};window.addEventListener('hashchange',navigate);window.addEventListener('popstate',navigate);
-  window.addEventListener('beforeunload',()=>{drafts.attempt({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun,view:viewMode});});
+  window.addEventListener('beforeunload',()=>{drafts.attempt({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun&&!aiHold,view:viewMode});});
   globalThis.ModlApp={getSource:()=>$src.value,getSnapshot:()=>snapshotState(),openURL,setSource:src=>{$src.value=src;$src.dispatchEvent(new Event('input',{bubbles:true}));},render:()=>renderButton.click(),store,panel};
+  const aiUI=await mountClientAi({config,type,urlState,getSnapshot:()=>type.normalize(snapshotState()),getFingerprint:fingerprint,container:shell.drawer.body,toolbar:shell.toolbar,status:message=>$parseStatus.textContent=message,onApply:doc=>{aiHold=true;navigationRevision++;panel.cancelLoad();cancelInteractions();applyState(fromDocument(doc));saved=null;drafts.attempt(snapshotState(),true);syncHash();renderButton.hidden=false;$parseStatus.textContent='Change accepted — press Render once in More.';}});
   await openURL(location.href);initialized=true;document.body.dataset.ready='true';
   store.retireLegacyTokens().catch(()=>{});
   offline.init().catch(error=>{shell.offlineStatus.textContent=error.message;});

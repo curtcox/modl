@@ -1,6 +1,6 @@
 import{test}from'@playwright/test';test.setTimeout(120000);
 export default{
- ready:'body[data-ready="true"]',editor:'#src',status:'#hashbin-status',draftKey:'modl:draft',more:'#more-toggle',share:'#btnCopy',qr:'#btnQr',tabs:['Text','Diagram'],example:'diagram-1',cachePrefix:'modl-offline-',offlineAsset:'js/fragment-ui.css',kitURL:'./vendor/fragment-kit-v0.3.5/src/index.js',
+ ready:'body[data-ready="true"]',editor:'#src',status:'#hashbin-status',draftKey:'modl:draft',more:'#more-toggle',share:'#btnCopy',qr:'#btnQr',tabs:['Text','Diagram'],example:'diagram-1',cachePrefix:'modl-offline-',offlineAsset:'js/fragment-ui.css',kitURL:'./vendor/fragment-kit-v0.4.3/src/index.js',
  source:text=>'# '+text.replaceAll('\n','\n# ')+'\nnode circle blue Note',
  isWrittenURL:href=>new URL(href).hash.startsWith('#h1='),
  getSource:page=>page.evaluate(()=>ModlApp.getSource()),getDocument:page=>page.evaluate(()=>ModlApp.getSnapshot()),edit:(page,src)=>page.locator('#src').fill(src),

@@ -1,4 +1,4 @@
-import * as kit from'../vendor/fragment-kit-v0.3.5/src/index.js';
+import * as kit from'../vendor/fragment-kit-v0.4.3/src/index.js';
 import settings from'../fragment-kit.config.json' with{type:'json'};
 export const config=kit.createConfig(settings);
 export function positions(value={}){
@@ -28,7 +28,7 @@ export function transactions(storage,clientId=config.hashbinClientId){if(!storag
 export class HashBinStore extends kit.HashBinStore{
  constructor(options={}){
   let session;try{session=globalThis.sessionStorage;}catch{}
-  const load=options.loadSDK??(()=>import('../vendor/fragment-kit-v0.3.5/vendor/hashbin-sdk-v0.4.0.mjs'));
+  const load=options.loadSDK??(()=>import('../vendor/fragment-kit-v0.4.3/vendor/hashbin-sdk-v0.4.0.mjs'));
   super({config,type,...options,transactionStorage:transactions(options.transactionStorage??session,options.clientId??config.hashbinClientId),loadSDK:async()=>{
    const sdk=await load();return{...sdk,HashBinClient:class extends sdk.HashBinClient{
     constructor(clientOptions){super({...clientOptions,baseUrl:options.apiBase??clientOptions.baseUrl,contentBaseUrl:options.contentBase??clientOptions.contentBaseUrl});}
@@ -43,3 +43,7 @@ export class HashBinStore extends kit.HashBinStore{
  load=async input=>fromDocument(await super.load(input));
  async published(hash){const result=await super.published(hash);return result?.snapshot?{...result,snapshot:fromDocument(result.snapshot)}:result;}
 }
+
+// AI is a separate opt-in entry point; document loading never creates a connection.
+type.ai={"describe":"MODL diagram src. Preserve node positions, raw-text option, view and autorun. Native parser and rendering vocabulary are unchanged. Accepted source waits for explicit Render once.","paths":["/src"]};
+type.ai.checks={parsesDiagram:async({document})=>(await import('./parse.js')).parseSource(document.src).errors.length===0};

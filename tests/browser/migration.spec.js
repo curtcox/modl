@@ -1,4 +1,4 @@
-import{test,expect}from'@playwright/test';import fs from'node:fs';import{computeCID}from'../../vendor/fragment-kit-v0.3.5/src/index.js';
+import{test,expect}from'@playwright/test';import fs from'node:fs';import{computeCID}from'../../vendor/fragment-kit-v0.4.3/src/index.js';
 const corpus=JSON.parse(fs.readFileSync('tests/fixtures/legacy-kit-corpus.json','utf8'));
 const ready=async(page,url='./')=>{await page.goto(url);await expect(page.locator('body')).toHaveAttribute('data-ready','true');};
 for(const entry of corpus.cases.filter(entry=>entry.kind==='source'||entry.kind==='example'))test('harvested legacy '+entry.label,async({page})=>{const old=new URL(entry.href),url=new URL(process.env.FRAGMENT_KIT_BASE_URL??'http://127.0.0.1:8012/');url.search=old.search;url.hash=old.hash;await ready(page,url.href);expect(await page.locator('#src').inputValue()).toBe(entry.src??entry.expected?.src??corpus.example.source);if(entry.expected?.pos)expect((await page.evaluate(()=>ModlApp.getSnapshot())).pos).toMatchObject(entry.expected.pos);});

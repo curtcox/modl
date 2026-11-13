@@ -104,3 +104,5 @@ marks and viewport. The returned `viewportGroup` lets hosts update the camera.
 Drag, pan and link callbacks belong to the host; `imageInfo` supplies cached
 image dimensions. Rendering itself performs no storage, network or navigation.
 The editor uses this same module, preserving native shapes and styling.
+
+Optional AI: Ask/review/undo, gallery suggestions and model comparison use the published Fragment Kit 0.4.3 entry point. See [AI guidance](docs-src/ai.md). Budgets start at zero; accepted source waits for explicit Run, Render or Check. The bundled synthetic [suite](ai-suite.json) and [75-result report](ai-comparison.json) measure source assertions and document invariants, not runtime quality or a model winner.

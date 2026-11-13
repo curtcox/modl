@@ -3,8 +3,8 @@
     "js/parse.js": "587fda4548814761f62620f4ac8b5a91ade0606eaa5b3fa52e9162ef343da074",
     "js/render.js": "20f8a8d7421d4204a59c1a5e33c092b181e1f87fb6c3063b581b635262ce8a7b",
     "js/diagram-features.js": "fea251f948d17b9984528dcc10b1edd3b04282848882bc55851660d561e3ba19",
-    "js/editor.js": "feb91f2b825bc27d4030627512f67730070291abcf0f4bb0fee54dae1121df34",
-    "js/fragment-config.js": "e3ea65ef6fcfbb05c9e3103db3f4ed444a7c350d8e27dfbb096b24d2e8641097",
+    "js/editor.js": "08421e37fb1490a328035256ac953d9e279caf7b8f346b6ec20f6382c5420523",
+    "js/fragment-config.js": "cc37c0a378bee2e8c7fab431aed713ac84a1833cb282b0a3f4f8faeb4e233952",
     "js/gallery-catalog.js": "b8abacf2ccabd8d46f218d2a08b2c79ad178076d3efe73cd2ab270d132120d72",
     "engine-integrity.json": "0ded08a7ccb81c8d57a37a3d70ad6b68b7ec252a508236d5f908ac1e27380c90"
   },

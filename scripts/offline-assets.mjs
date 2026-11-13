@@ -1,6 +1,6 @@
 import{writeFile,rm}from'node:fs/promises';
 import path from'node:path';
-import{generateOffline}from'../vendor/fragment-kit-v0.3.5/tools/offline-assets.mjs';
+import{generateOffline}from'../vendor/fragment-kit-v0.4.3/tools/offline-assets.mjs';
 import{publicAssets}from'./public-assets.mjs';
 export async function offlineManifest(root='.',check=false){
  const temporary=path.join(root,'.offline-build.json');
