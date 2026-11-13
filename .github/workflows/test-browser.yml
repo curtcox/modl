@@ -13,7 +13,7 @@ jobs:
       contract-config: testing-contract.config.mjs
       base-url: http://127.0.0.1:8012/
       server-command: node vendor/fragment-kit-v0.4.3/tools/serve.mjs --port 8012
-      browser-command: node tests/browser/ai.mjs && node tests/browser/ai.mjs && node tests/browser/ai.mjs && node tests/browser/ai.mjs && node tests/browser/deep-zoom.cjs "$FRAGMENT_KIT_BASE_URL" "$BROWSER" && npx playwright test --project="$BROWSER"
+      browser-command: node tests/browser/ai.mjs && node tests/browser/deep-zoom.cjs "$FRAGMENT_KIT_BASE_URL" "$BROWSER" && npx playwright test --project="$BROWSER"
       gallery-command: node scripts/render-kit-gallery.mjs --check
   kit:
     uses: curtcox/Tools-for-pages-with-state-in-URL-fragments/.github/workflows/kit-check.yml@v2

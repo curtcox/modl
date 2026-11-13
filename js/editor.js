@@ -633,6 +633,7 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
   window.addEventListener('beforeunload',()=>{drafts.attempt({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun&&!aiHold,view:viewMode});});
   globalThis.ModlApp={getSource:()=>$src.value,getSnapshot:()=>snapshotState(),openURL,setSource:src=>{$src.value=src;$src.dispatchEvent(new Event('input',{bubbles:true}));},render:()=>renderButton.click(),store,panel};
   const aiUI=await mountClientAi({config,type,urlState,getSnapshot:()=>type.normalize(snapshotState()),getFingerprint:fingerprint,container:shell.drawer.body,toolbar:shell.toolbar,status:message=>$parseStatus.textContent=message,onApply:doc=>{aiHold=true;navigationRevision++;panel.cancelLoad();cancelInteractions();applyState(fromDocument(doc));saved=null;drafts.attempt(snapshotState(),true);syncHash();renderButton.hidden=false;$parseStatus.textContent='Change accepted — press Render once in More.';}});
+  shell.header.insertBefore(document.getElementById('ask-open'),shell.header.querySelector('.fk-more'));
   await openURL(location.href);initialized=true;document.body.dataset.ready='true';
   store.retireLegacyTokens().catch(()=>{});
   offline.init().catch(error=>{shell.offlineStatus.textContent=error.message;});
