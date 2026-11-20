@@ -6,4 +6,4 @@
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 
 /* Keep the three view tabs and sharing actions on one phone toolbar row across system fonts. */
-@media(max-width:767px){.fk-header.fk-compact>.fk-toolbar{gap:4px}.fk-header.fk-compact>.fk-toolbar button{padding:8px;font-size:14px;min-width:44px}}
+@media(max-width:767px){.fk-header.fk-compact>.fk-toolbar{gap:4px;flex-wrap:nowrap;overflow-x:auto}.fk-header.fk-compact>.fk-toolbar>*{flex-shrink:0}.fk-header.fk-compact>.fk-toolbar button{padding:8px;font-size:14px;min-width:44px;white-space:nowrap}}

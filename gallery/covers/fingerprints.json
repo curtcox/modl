@@ -3,8 +3,8 @@
     "js/parse.js": "587fda4548814761f62620f4ac8b5a91ade0606eaa5b3fa52e9162ef343da074",
     "js/render.js": "20f8a8d7421d4204a59c1a5e33c092b181e1f87fb6c3063b581b635262ce8a7b",
     "js/diagram-features.js": "fea251f948d17b9984528dcc10b1edd3b04282848882bc55851660d561e3ba19",
-    "js/editor.js": "001b94acb352fa32007b15a5b572cc7fada4c608b65d1784ebc0300294969cfc",
-    "js/fragment-config.js": "cc37c0a378bee2e8c7fab431aed713ac84a1833cb282b0a3f4f8faeb4e233952",
+    "js/editor.js": "9ec843ac3fab3bb081e8df758677f6dd7d250cfa8701843c00636dc35265ef0d",
+    "js/fragment-config.js": "f4ba845034ccc652524983d6fdca4d148bbbdff16b3a8a8524f083c0edc3794d",
     "js/gallery-catalog.js": "b8abacf2ccabd8d46f218d2a08b2c79ad178076d3efe73cd2ab270d132120d72",
     "engine-integrity.json": "0ded08a7ccb81c8d57a37a3d70ad6b68b7ec252a508236d5f908ac1e27380c90"
   },
@@ -24,7 +24,7 @@
     },
     "diagram-4": {
       "document": "3d160e5693b97a5e16bdcfe9139eb5ca4944a9724afb99beaa468e070ba7b31b",
-      "cover": "6f469d5bacfad36d946e06ee7e0b29cf5ff6be1b73dd5a027836f5adc129cbda"
+      "cover": "1e5f7e0bab0358f1468e739f0743714c69ea3758908f7d45f29dc4f8eef3fc8d"
     },
     "diagram-5": {
       "document": "594ce8d3053debb9ec4c40c7b5c72bfe1a0b6588c7d0bc5fde8a5e026443d32f",

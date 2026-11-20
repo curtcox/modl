@@ -4,7 +4,7 @@ import {renderDiagram, nodeScale} from './render.js';
 import {layeredPositions, groupBounds, extraShape, marksFromURL} from './diagram-features.js';
 import { NODE_SIZES, NODE_SHAPES, EDGE_STYLES, COLORS, lexLine, parseAttrs, parseSource, normalizeUrl } from './parse.js';
 import{config,type,fromDocument,serializeLegacy,encodeState,urlState,documents,HashBinStore}from'./fragment-config.js';
-import{LocalDrafts,createStorage,HashBinPanel,createShell,mountMobileTabs,createShareDialog,createQrDialog,OfflineClient}from'../vendor/fragment-kit-v0.4.3/src/index.js';
+import{LocalDrafts,createStorage,HashBinPanel,createShell,mountMobileTabs,createShareDialog,createQrDialog,OfflineClient,openLibrary,createLibraryPanel}from'../vendor/fragment-kit-v0.5.0/src/index.js';
 function optionalStorage(kind){try{return globalThis[kind];}catch{return undefined;}}
 function localOverride(name,fallback){const value=new URL(location.href).searchParams.get(name);try{const url=new URL(value);if(url.protocol==='http:'&&['localhost','127.0.0.1'].includes(url.hostname))return url.origin;}catch{}return fallback;}
 const API_BASE=localOverride('api','https://hashbin.org'),CONTENT_BASE=localOverride('content','https://256t.us'),IS_LOCAL_API=API_BASE!=='https://hashbin.org';
@@ -24,7 +24,7 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
  document.getElementById('saveDialog').remove();document.getElementById('qrDialog').remove();
  shell.header.querySelector('.fk-more').id='more-toggle';
  const drafts=new LocalDrafts({storage:createStorage({prefix:config.storagePrefix}),key:'draft',serialize:value=>JSON.stringify(fromDocument(value)),parse:text=>type.normalize(JSON.parse(text))});
- let syncingView=false,initialized=false,autoRun=true,viewMode='split',mobileTabs,navigationRevision=0,lastNavigation,qrSave=false,gestureFingerprint;
+ let syncingView=false,initialized=false,autoRun=true,viewMode='split',mobileTabs,navigationRevision=0,lastNavigation,qrSave=false,gestureFingerprint,libraryPanel=null;
 
   // -----------------------------
   // Reserved vocab
@@ -213,7 +213,7 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
     let href=urlState.build(snapshot,{url:location.href,run:autoRun&&!aiHold,view:viewMode==='split'?undefined:viewMode}).href;
     if(saved&&payload===saved.payload)href=urlState.link(href,saved.cid);
     if(replace)history.replaceState(null,'',href);else history.pushState(null,'',href);
-    lastNavigation=location.href;updateHashStatus();updateSavedState();
+    lastNavigation=location.href;updateHashStatus();updateSavedState();libraryPanel?.changed();
    }catch(error){showLoadError(error.message);}
   }
   function cancelInteractions(){
@@ -231,7 +231,8 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
   }
   const pendingOptions=new Map();
   const panel=new HashBinPanel({store,urlState,container:shell.drawer.body,getSnapshot:()=>snapshotState({flush:true}),getFingerprint:fingerprint,
-   onLoad:(doc,cid)=>{drafts.opened();cancelInteractions();applyDocument(doc,cid,pendingOptions.get(cid));syncHash();shell.drawer.dialog.close();},
+   onLoad:async(doc,cid)=>{drafts.opened();cancelInteractions();applyDocument(doc,cid,pendingOptions.get(cid));syncHash();shell.drawer.dialog.close();await libraryPanel?.opened(doc,cid?{kind:'cid',source:cid}:{record:false});},
+   onDetached:result=>{void libraryPanel?.published(result);},
    onSaved:cid=>{saved={cid,payload:savePayload(snapshotState())};syncHash({replace:false});if(qrSave){qrSave=false;panel.dialog.close();qr.open(urlState.link(location.href,cid));}}
   });
   panel.dialog.addEventListener('close',()=>{qrSave=false;});
@@ -241,13 +242,17 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
   const qr=createQrDialog({config,urlState,onLoad:outcome=>{const incoming=new URL(outcome.kind==='cid'?urlState.link(location.href,outcome.cid):outcome.href),url=new URL(location.href);url.search=incoming.search;url.hash=incoming.hash;history.pushState(null,'',url);return openURL(url.href);},onSave:()=>{qrSave=true;qr.dialog.close();return panel.openSave();}});
   qrButton.onclick=()=>{try{qr.open(urlState.build(snapshotState({flush:true}),{run:autoRun&&!aiHold,view:viewMode==='split'?undefined:viewMode}).href);}catch(error){showLoadError(error.message);}};
   renderButton.onclick=()=>{aiHold=false;renderButton.hidden=autoRun;try{state=fromDocument(type.normalize({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun&&!aiHold,view:viewMode}));renderAll();syncHash();shell.drawer.dialog.close();}catch(error){showLoadError(error.message);}};
-  document.getElementById('btnReset').onclick=()=>{navigationRevision++;panel.cancelLoad();cancelInteractions();drafts.opened();autoRun=true;renderButton.hidden=true;setViewMode('split');saved=null;applyState(makeDefaultState());renderAll();drafts.attempt(snapshotState(),true);syncHash();shell.drawer.dialog.close();};
+  document.getElementById('btnReset').onclick=()=>{navigationRevision++;panel.cancelLoad();libraryPanel?.cancelLoad();cancelInteractions();drafts.opened();autoRun=true;renderButton.hidden=true;setViewMode('split');saved=null;applyState(makeDefaultState());renderAll();drafts.attempt(snapshotState(),true);syncHash();shell.drawer.dialog.close();};
   document.getElementById('btnCommit').onclick=()=>{drafts.attempt(snapshotState({flush:true}),true);syncHash({replace:false});shell.drawer.dialog.close();};
-  drafts.mount(shell.drawer.body,doc=>{navigationRevision++;panel.cancelLoad();cancelInteractions();applyDocument(doc);syncHash();},doc=>doc.src);
+  const describe=doc=>doc?.src?.split('\n').map(line=>line.replace(/^\s*#\s?/,'').trim()).find(Boolean)??'';
+  const library=await openLibrary({config,type,describe}).catch(error=>{showLoadError(error.message);return null;});
+  if(library)libraryPanel=createLibraryPanel({library,store,urlState,getSnapshot:()=>type.normalize(snapshotState({flush:true})),getFingerprint:fingerprint,container:shell.toolbar,drafts,
+   onLoad:doc=>{aiUI?.cancel();navigationRevision++;cancelInteractions();applyDocument(doc);syncHash();$parseStatus.textContent='Library revision loaded — press Render.';}});
+  drafts.mount(shell.drawer.body,doc=>{navigationRevision++;panel.cancelLoad();libraryPanel?.cancelLoad();cancelInteractions();applyDocument(doc);void libraryPanel?.opened(doc,{record:false});syncHash();},doc=>doc.src);
   const download=(blob,name)=>{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);};
   const backup=document.createElement('button');backup.textContent='Download diagram';backup.onclick=()=>{try{download(new Blob([savePayload(snapshotState({flush:true}))],{type:'application/json'}),'diagram.json');}catch(error){showLoadError(error.message);}};shell.drawer.body.append(backup);
   const fileLabel=document.createElement('label'),file=document.createElement('input');fileLabel.textContent='Open diagram file';file.type='file';file.accept='.json,.modl,.txt';file.setAttribute('aria-label','Open diagram file');fileLabel.append(file);shell.drawer.body.append(fileLabel);
-  file.onchange=async()=>{const selected=file.files[0];file.value='';if(!selected)return;const revision=++navigationRevision;panel.cancelLoad();cancelInteractions();try{if(selected.size>config.maxBytes)throw Error('Diagram file exceeds 5 MiB.');const data=await selected.slice(0,config.maxBytes+1).arrayBuffer();if(revision!==navigationRevision)return;const value=documents.parse(new TextDecoder('utf-8',{fatal:true}).decode(data));drafts.opened();applyDocument(value);syncHash();shell.drawer.dialog.close();}catch(error){if(revision===navigationRevision)showLoadError(error.message);}};
+  file.onchange=async()=>{const selected=file.files[0];file.value='';if(!selected)return;const revision=++navigationRevision;panel.cancelLoad();cancelInteractions();try{if(selected.size>config.maxBytes)throw Error('Diagram file exceeds 5 MiB.');const data=await selected.slice(0,config.maxBytes+1).arrayBuffer();if(revision!==navigationRevision)return;const value=documents.parse(new TextDecoder('utf-8',{fatal:true}).decode(data));drafts.opened();applyDocument(value);void libraryPanel?.opened(value,{record:false});syncHash();shell.drawer.dialog.close();}catch(error){if(revision===navigationRevision)showLoadError(error.message);}};
   mobileTabs=mountMobileTabs({desktop:true,container:shell.toolbar,panels:[{label:'Text',panel:document.querySelector('.left')},{label:'Diagram',panel:document.querySelector('.right')}],onChange:index=>{const next=index===-1?'split':index===1?'diagram':'source';if(initialized&&!syncingView&&next!==viewMode)setViewMode(next,true);}});
   const textTab=shell.toolbar.querySelector('[role=tab]');
   const leaveHelp=()=>{if(viewMode==='help')setViewMode('source',true);};
@@ -605,34 +610,37 @@ const store=new HashBinStore({clientId,redirectUri:callback.href,legacyStorage:o
   repair.onclick=()=>offline.repair().catch(error=>{shell.offlineStatus.textContent=error.message;});update.onclick=()=>{syncHash();offline.activateUpdate();};
   let controlled=Boolean(navigator.serviceWorker?.controller);navigator.serviceWorker?.addEventListener('controllerchange',()=>{if(controlled){syncHash();location.reload();}controlled=true;});
   async function openURL(href){
-   const revision=++navigationRevision;lastNavigation=href;panel.cancelLoad();cancelInteractions();drafts.opened();
+   const revision=++navigationRevision;lastNavigation=href;panel.cancelLoad();libraryPanel?.cancelLoad();cancelInteractions();drafts.opened();
    try{
     const intent=urlState.parse(href),url=new URL(href),options={};
     if(url.searchParams.has('run'))options.run=intent.run;if(intent.view)options.view=intent.view;
     if(intent.kind==='publish'){
      const result=await store.published(intent.hash);if(revision!==navigationRevision)return;
-     if(result?.snapshot){applyDocument(result.snapshot,result.cid??null,options);syncHash();}
-     if(result){panel.status.textContent=result.error||'Saved to HashBin.';shell.drawer.open();}
-    }else if(intent.kind==='source'){applyDocument(intent.doc,null,options);}
-    else if(intent.kind==='cid'){panel.status.textContent='Loading from HashBin…';const doc=await store.load(intent.cid);if(revision!==navigationRevision)return;applyDocument(doc,intent.cid,options);panel.status.textContent='Loaded from HashBin.';}
+     const detached=result?.kind==='library'||result?.kind==='revision';
+     if(result?.snapshot){applyDocument(result.snapshot,detached?null:result.cid??null,options);syncHash();}
+     if(result){panel.status.textContent=result.error||(detached?(result.kind==='library'?'Library exported to HashBin.':'Revision saved to HashBin.'):'Saved to HashBin.');shell.drawer.open();}
+     if(detached)void libraryPanel?.published(result);
+     else if(result?.snapshot)void libraryPanel?.opened(result.snapshot,result.cid?{kind:'cid',source:result.cid}:{record:false});
+    }else if(intent.kind==='source'){applyDocument(intent.doc,null,options);void libraryPanel?.opened(intent.doc,{kind:'link'});}
+    else if(intent.kind==='cid'){panel.status.textContent='Loading from HashBin…';const doc=await store.load(intent.cid);if(revision!==navigationRevision)return;applyDocument(doc,intent.cid,options);void libraryPanel?.opened(doc,{kind:'cid',source:intent.cid});panel.status.textContent='Loaded from HashBin.';}
     else if(intent.kind==='example'){
-     const{catalog}=await import('./gallery-catalog.js');if(revision!==navigationRevision)return;const{legacyExamples}=await import('./legacy-examples.js');if(revision!==navigationRevision)return;const example=catalog.find(example=>example.id===intent.id)??(legacyExamples[intent.id]?{document:legacyExamples[intent.id]}:null);if(!example)throw Error('Unknown diagram example.');applyDocument(example.document,null,options);syncHash();
-    }else if(intent.kind==='none'){applyDocument({...makeDefaultState(),autorun:intent.run,view:options.view??(matchMedia('(max-width:767px)').matches?'source':'split')},null,options);syncHash();}
+     const{catalog}=await import('./gallery-catalog.js');if(revision!==navigationRevision)return;const{legacyExamples}=await import('./legacy-examples.js');if(revision!==navigationRevision)return;const example=catalog.find(example=>example.id===intent.id)??(legacyExamples[intent.id]?{document:legacyExamples[intent.id]}:null);if(!example)throw Error('Unknown diagram example.');applyDocument(example.document,null,options);void libraryPanel?.opened(example.document,{record:false});syncHash();
+    }else if(intent.kind==='none'){applyDocument({...makeDefaultState(),autorun:intent.run,view:options.view??(matchMedia('(max-width:767px)').matches?'source':'split')},null,options);void libraryPanel?.opened(type.normalize(snapshotState()),{record:false});syncHash();}
     else throw Error('This diagram link is not supported.');
    }catch(error){if(revision===navigationRevision)showLoadError(error.message);}
   }
   $src.addEventListener('input',()=>{
-   const revision=++navigationRevision;panel.cancelLoad();clearTimeout(parseTimer);saved=null;
+   const revision=++navigationRevision;panel.cancelLoad();libraryPanel?.cancelLoad();clearTimeout(parseTimer);saved=null;
    drafts.attempt({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun&&!aiHold,view:viewMode},true);
    parseTimer=setTimeout(()=>{if(revision!==navigationRevision)return;try{type.normalize({src:$src.value,pos:state.pos});if(autoRun){state.src=$src.value;renderAll();}syncHash();}catch(error){showLoadError(error.message);}},160);
   });
-  $svg.addEventListener('pointerdown',()=>{navigationRevision++;panel.cancelLoad();try{gestureFingerprint=savePayload(snapshotState());}catch{}},true);
+  $svg.addEventListener('pointerdown',()=>{navigationRevision++;panel.cancelLoad();libraryPanel?.cancelLoad();try{gestureFingerprint=savePayload(snapshotState());}catch{}},true);
   for(const name of ['pointerup','pointercancel'])$svg.addEventListener(name,()=>queueMicrotask(()=>{gestureFingerprint=null;}));
   window.addEventListener('resize',()=>{if(autoRun)renderAll();});
   const navigate=()=>{if(lastNavigation!==location.href)void openURL(location.href);};window.addEventListener('hashchange',navigate);window.addEventListener('popstate',navigate);
   window.addEventListener('beforeunload',()=>{drafts.attempt({src:$src.value,pos:state.pos,rawText:state.rawText,autorun:autoRun&&!aiHold,view:viewMode});});
   globalThis.ModlApp={getSource:()=>$src.value,getSnapshot:()=>snapshotState(),openURL,setSource:src=>{$src.value=src;$src.dispatchEvent(new Event('input',{bubbles:true}));},render:()=>renderButton.click(),store,panel};
-  const aiUI=await mountClientAi({config,type,urlState,getSnapshot:()=>type.normalize(snapshotState()),getFingerprint:fingerprint,container:shell.drawer.body,toolbar:shell.toolbar,status:message=>$parseStatus.textContent=message,onApply:doc=>{aiHold=true;navigationRevision++;panel.cancelLoad();cancelInteractions();applyState(fromDocument(doc));saved=null;drafts.attempt(snapshotState(),true);syncHash();renderButton.hidden=false;$parseStatus.textContent='Change accepted — press Render once in More.';}});
+  const aiUI=await mountClientAi({config,type,urlState,getSnapshot:()=>type.normalize(snapshotState()),getFingerprint:fingerprint,container:shell.drawer.body,toolbar:shell.toolbar,status:message=>$parseStatus.textContent=message,onApply:doc=>{aiHold=true;navigationRevision++;panel.cancelLoad();cancelInteractions();applyState(fromDocument(doc));saved=null;drafts.attempt(snapshotState(),true);syncHash();renderButton.hidden=false;$parseStatus.textContent='Change accepted — press Render once in More.';void libraryPanel?.opened(doc,{record:false});}});
   shell.header.insertBefore(document.getElementById('ask-open'),shell.header.querySelector('.fk-more'));
   await openURL(location.href);initialized=true;document.body.dataset.ready='true';
   store.retireLegacyTokens().catch(()=>{});
